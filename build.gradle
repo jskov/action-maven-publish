@@ -1,5 +1,5 @@
 plugins {
-    id 'dk.mada.style' version '1.0.1'
+    id 'dk.mada.style' version '1.0.3'
     id 'eclipse'
     id 'java'
 }
