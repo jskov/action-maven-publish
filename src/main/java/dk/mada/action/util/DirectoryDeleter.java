@@ -13,6 +13,7 @@ import java.nio.file.attribute.BasicFileAttributes;
  */
 public final class DirectoryDeleter {
     private DirectoryDeleter() {
+        // empty
     }
 
     /**

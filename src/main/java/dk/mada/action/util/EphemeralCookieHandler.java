@@ -20,6 +20,7 @@ public final class EphemeralCookieHandler {
     private static Logger logger = Logger.getLogger(EphemeralCookieHandler.class.getName());
 
     private EphemeralCookieHandler() {
+        // empty
     }
 
     /** {@return a new cookie handler that accepts all cookies} */
@@ -39,8 +40,7 @@ public final class EphemeralCookieHandler {
         @Override
         public void add(URI uri, HttpCookie cookie) {
             logger.finest(() -> "cookie: add url:" + uri + ", name:" + cookie.getName());
-            cookies.computeIfAbsent(uri.getHost(), k -> new HashSet<>())
-                    .add(cookie);
+            cookies.computeIfAbsent(uri.getHost(), k -> new HashSet<>()).add(cookie);
             cookieOrigins.put(cookie, uri);
         }
 
@@ -56,9 +56,7 @@ public final class EphemeralCookieHandler {
         @Override
         public List<HttpCookie> getCookies() {
             logger.finest("cookie: get all");
-            return cookies.values().stream()
-                    .flatMap(Set::stream)
-                    .toList();
+            return cookies.values().stream().flatMap(Set::stream).toList();
         }
 
         @Override

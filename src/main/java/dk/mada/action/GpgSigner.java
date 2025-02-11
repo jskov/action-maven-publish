@@ -1,5 +1,10 @@
 package dk.mada.action;
 
+import dk.mada.action.ActionArguments.GpgCertificate;
+import dk.mada.action.util.DirectoryDeleter;
+import dk.mada.action.util.ExternalCmdRunner;
+import dk.mada.action.util.ExternalCmdRunner.CmdInput;
+import dk.mada.action.util.ExternalCmdRunner.CmdResult;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,12 +15,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import dk.mada.action.ActionArguments.GpgCertificate;
-import dk.mada.action.util.DirectoryDeleter;
-import dk.mada.action.util.ExternalCmdRunner;
-import dk.mada.action.util.ExternalCmdRunner.CmdInput;
-import dk.mada.action.util.ExternalCmdRunner.CmdResult;
 
 /**
  * Signs files using external GPG application.
@@ -46,10 +45,9 @@ public final class GpgSigner implements AutoCloseable {
         try {
             this.gpgCertificate = gpgCertificate;
 
-            gnupghomeDir = Files.createTempDirectory("_gnupghome-",
-                    PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")));
-            gpgEnv = Map.of(
-                    "GNUPGHOME", gnupghomeDir.toAbsolutePath().toString());
+            gnupghomeDir = Files.createTempDirectory(
+                    "_gnupghome-", PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")));
+            gpgEnv = Map.of("GNUPGHOME", gnupghomeDir.toAbsolutePath().toString());
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create GNUPGHOME directory", e);
         }
@@ -84,7 +82,8 @@ public final class GpgSigner implements AutoCloseable {
 
             // Extract fingerprint of the certificate
             CmdResult idResult = runCmd("gpg", "-K", "--with-colons");
-            certificateFingerprint = GpgDetailType.FINGERPRINT.extractFrom(idResult.output()).replace(":", "");
+            certificateFingerprint =
+                    GpgDetailType.FINGERPRINT.extractFrom(idResult.output()).replace(":", "");
 
             // Mark the certificate as ultimately trusted
             Path ownerTrustFile = gnupghomeDir.resolve("otrust.txt");
@@ -124,10 +123,14 @@ public final class GpgSigner implements AutoCloseable {
                 "--batch",
                 "--no-tty",
                 "--yes",
-                "--pinentry-mode", "loopback",
-                "--passphrase-fd", "0",
-                "-u", fingerprint,
-                "--detach-sign", "--armor",
+                "--pinentry-mode",
+                "loopback",
+                "--passphrase-fd",
+                "0",
+                "-u",
+                fingerprint,
+                "--detach-sign",
+                "--armor",
                 file.toAbsolutePath().toString()));
         runCmdWithInput(gpgCertificate.secret(), cmd);
 

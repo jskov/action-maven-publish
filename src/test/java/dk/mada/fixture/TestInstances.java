@@ -9,9 +9,6 @@ import dk.mada.action.OssrhProxy;
  * Provides test instances of the domain classes.
  */
 public final class TestInstances {
-    private TestInstances() {
-    }
-
     /** The GPG signer test instance. */
     private static GpgSigner signer;
     /** The bundle collector test instance. */
@@ -20,6 +17,10 @@ public final class TestInstances {
     private static OssrhProxy ossrhProxy;
     /** The bundle publisher test instance. */
     private static BundlePublisher bundlePublisher;
+
+    private TestInstances() {
+        // empty
+    }
 
     /** @{return an initialized GPG signer instance} */
     public static GpgSigner signer() {

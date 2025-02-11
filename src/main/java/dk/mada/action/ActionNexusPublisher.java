@@ -1,12 +1,11 @@
 package dk.mada.action;
 
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import dk.mada.action.BundleCollector.Bundle;
 import dk.mada.action.BundlePublisher.PublishingResult;
 import dk.mada.action.util.LoggerConfig;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Action uploading and publishing Maven artifacts to OSSRH (MavenCentral).

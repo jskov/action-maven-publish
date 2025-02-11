@@ -13,6 +13,7 @@ import java.util.logging.Logger;
  */
 public final class LoggerConfig {
     private LoggerConfig() {
+        // empty
     }
 
     /** Loads default logger configuration, sets info level. */
