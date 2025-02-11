@@ -1,5 +1,8 @@
 package dk.mada.action;
 
+import dk.mada.action.ActionArguments.OssrhCredentials;
+import dk.mada.action.BundleCollector.Bundle;
+import dk.mada.action.util.EphemeralCookieHandler;
 import java.io.IOException;
 import java.net.CookieHandler;
 import java.net.HttpURLConnection;
@@ -17,10 +20,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import dk.mada.action.ActionArguments.OssrhCredentials;
-import dk.mada.action.BundleCollector.Bundle;
-import dk.mada.action.util.EphemeralCookieHandler;
-
 /**
  * A proxy for OSSRH web service.
  *
@@ -32,7 +31,15 @@ public class OssrhProxy {
     /** The base URL for OSSRH. */
     private static final String OSSRH_BASE_URL = "https://s01.oss.sonatype.org";
     /** The User Agent used by the proxy calls. */
-    private static final String[] USER_AGENT = new String[] { "User-Agent", "jskov_action-maven-publish" };
+    private static final String[] USER_AGENT = new String[] {"User-Agent", "jskov_action-maven-publish"};
+    /** Default timeout for uploading an artifact. */
+    private static final int DEFAULT_UPLOAD_TIMEOUT_SECONDS = 90;
+    /** Default timeout for short remote calls. */
+    private static final int DEFAULT_SHORT_CALL_TIMEOUT_SECONDS = 30;
+    /** Connection timeout. */
+    private static final int CONNECTION_TIMEOUT_SECONDS = 10;
+    /** Download timeout. */
+    private static final int DOWNLOAD_TIMEOUT_SECONDS = 30;
     /** The credentials to use for login to OSSRH. */
     private final OssrhCredentials credentials;
     /** The http client. */
@@ -52,13 +59,13 @@ public class OssrhProxy {
     public OssrhProxy(OssrhCredentials credentials) {
         this.credentials = credentials;
 
-        uploadTimeout = Duration.ofSeconds(90);
-        shortCallTimeout = Duration.ofSeconds(30);
+        uploadTimeout = Duration.ofSeconds(DEFAULT_UPLOAD_TIMEOUT_SECONDS);
+        shortCallTimeout = Duration.ofSeconds(DEFAULT_SHORT_CALL_TIMEOUT_SECONDS);
 
         CookieHandler cookieHandler = EphemeralCookieHandler.newAcceptAll();
         client = HttpClient.newBuilder()
                 .followRedirects(Redirect.NORMAL)
-                .connectTimeout(Duration.ofSeconds(10))
+                .connectTimeout(Duration.ofSeconds(CONNECTION_TIMEOUT_SECONDS))
                 .cookieHandler(cookieHandler)
                 .build();
     }
@@ -96,9 +103,7 @@ public class OssrhProxy {
      * @return the http response
      */
     public HttpResponse<String> stagingAction(String path, List<String> repoIds) {
-        String idList = repoIds.stream()
-                .map(id -> "\"" + id + "\"")
-                .collect(Collectors.joining(","));
+        String idList = repoIds.stream().map(id -> "\"" + id + "\"").collect(Collectors.joining(","));
 
         String json = "{\"data\":{\"stagedRepositoryIds\":[" + idList + "]}}";
 
@@ -114,8 +119,8 @@ public class OssrhProxy {
             return;
         }
 
-        HttpResponse<String> response = doGet("/service/local/authentication/login",
-                "Authorization", credentials.asBasicAuth());
+        HttpResponse<String> response =
+                doGet("/service/local/authentication/login", "Authorization", credentials.asBasicAuth());
         if (response.statusCode() != HttpURLConnection.HTTP_OK) {
             throw new IllegalStateException("Failed authenticating: " + response.body());
         }
@@ -133,14 +138,12 @@ public class OssrhProxy {
         try {
             HttpRequest.Builder builder = HttpRequest.newBuilder()
                     .uri(URI.create(OSSRH_BASE_URL + path))
-                    .timeout(Duration.ofSeconds(30))
+                    .timeout(Duration.ofSeconds(DOWNLOAD_TIMEOUT_SECONDS))
                     .headers(USER_AGENT);
             if (headers.length > 0) {
                 builder.headers(headers);
             }
-            HttpRequest request = builder
-                    .GET()
-                    .build();
+            HttpRequest request = builder.GET().build();
             return client.send(request, BodyHandlers.ofString());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -191,7 +194,8 @@ public class OssrhProxy {
             String mimeNewline = "\r\n";
             String formIntro = ""
                     + "--" + boundaryMarker + mimeNewline
-                    + "Content-Disposition: form-data; name=\"file\"; filename=\"" + bundle.getFileName() + "\"" + mimeNewline
+                    + "Content-Disposition: form-data; name=\"file\"; filename=\"" + bundle.getFileName() + "\""
+                    + mimeNewline
                     + "Content-Type: " + Files.probeContentType(bundle) + mimeNewline
                     + mimeNewline; // (empty line between form instructions and the data)
 

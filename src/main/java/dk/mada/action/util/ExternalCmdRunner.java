@@ -21,6 +21,7 @@ public final class ExternalCmdRunner {
     private static final Path TEMP_DIR = Paths.get(System.getProperty("java.io.tmpdir"));
 
     private ExternalCmdRunner() {
+        // empty
     }
 
     /**
@@ -32,8 +33,7 @@ public final class ExternalCmdRunner {
      * @param env     the environment variables, or null
      * @param timeout the max runtime (in seconds) for the command. If exceeded, IllegalStateException is thrown
      */
-    public record CmdInput(List<String> command, Path execDir, String stdin, Map<String, String> env, int timeout) {
-    }
+    public record CmdInput(List<String> command, Path execDir, String stdin, Map<String, String> env, int timeout) {}
 
     /**
      * The result from a command execution.
@@ -41,8 +41,7 @@ public final class ExternalCmdRunner {
      * @param status the command exit code
      * @param output the combined stdout/stderr output
      */
-    public record CmdResult(int status, String output) {
-    }
+    public record CmdResult(int status, String output) {}
 
     /**
      * Runs an external command.

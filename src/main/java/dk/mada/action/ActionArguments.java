@@ -1,5 +1,6 @@
 package dk.mada.action;
 
+import dk.mada.action.BundlePublisher.TargetAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,8 +11,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.stream.Stream;
-
-import dk.mada.action.BundlePublisher.TargetAction;
 
 /**
  * These are the arguments accepted by the action. Arguments are provided via environment variables.
@@ -25,8 +24,14 @@ import dk.mada.action.BundlePublisher.TargetAction;
  * @param initialPauseSeconds the pause (in seconds) to wait initially for each bundle
  * @param loopPauseSeconds    the pause (in seconds) to wait in each loop for each bundle still being processed
  */
-public record ActionArguments(GpgCertificate gpgCertificate, Path searchDir, List<String> companionSuffixes,
-        Level logLevel, OssrhCredentials ossrhCredentials, TargetAction targetAction, long initialPauseSeconds,
+public record ActionArguments(
+        GpgCertificate gpgCertificate,
+        Path searchDir,
+        List<String> companionSuffixes,
+        Level logLevel,
+        OssrhCredentials ossrhCredentials,
+        TargetAction targetAction,
+        long initialPauseSeconds,
         long loopPauseSeconds) {
 
     /** Argument validation. */
@@ -45,8 +50,8 @@ public record ActionArguments(GpgCertificate gpgCertificate, Path searchDir, Lis
     @Override
     public String toString() {
         // Note: no secrets
-        return "ActionArguments [searchDir=" + searchDir + ", companionSuffixes=" + companionSuffixes + ", logLevel=" + logLevel
-                + ", targetAction=" + targetAction + "]";
+        return "ActionArguments [searchDir=" + searchDir + ", companionSuffixes=" + companionSuffixes + ", logLevel="
+                + logLevel + ", targetAction=" + targetAction + "]";
     }
 
     /**
@@ -65,7 +70,8 @@ public record ActionArguments(GpgCertificate gpgCertificate, Path searchDir, Lis
             Objects.requireNonNull(secret, "The private GPG secret must be specified");
 
             if (!key.contains(BEGIN_PGP_PRIVATE_KEY_BLOCK)) {
-                throw new IllegalArgumentException("Provided GPG key does not contain GPG private header: " + BEGIN_PGP_PRIVATE_KEY_BLOCK);
+                throw new IllegalArgumentException(
+                        "Provided GPG key does not contain GPG private header: " + BEGIN_PGP_PRIVATE_KEY_BLOCK);
             }
         }
 
@@ -91,7 +97,8 @@ public record ActionArguments(GpgCertificate gpgCertificate, Path searchDir, Lis
 
         /** {@return the credentials for use in a Basic Authentication header} */
         public String asBasicAuth() {
-            return "Basic " + Base64.getEncoder().encodeToString((user() + ":" + token()).getBytes(StandardCharsets.UTF_8));
+            return "Basic "
+                    + Base64.getEncoder().encodeToString((user() + ":" + token()).getBytes(StandardCharsets.UTF_8));
         }
 
         @Override
@@ -107,18 +114,21 @@ public record ActionArguments(GpgCertificate gpgCertificate, Path searchDir, Lis
      * @return the environment-specified action arguments
      */
     public static ActionArguments fromEnv() {
-        GpgCertificate gpgCert = new GpgCertificate(getRequiredEnv("SIGNING_KEY"), getRequiredEnv("SIGNING_KEY_SECRET"));
-        OssrhCredentials ossrhCreds = new OssrhCredentials(getRequiredEnv("OSSRH_USERNAME"), getRequiredEnv("OSSRH_TOKEN"));
+        GpgCertificate gpgCert =
+                new GpgCertificate(getRequiredEnv("SIGNING_KEY"), getRequiredEnv("SIGNING_KEY_SECRET"));
+        OssrhCredentials ossrhCreds =
+                new OssrhCredentials(getRequiredEnv("OSSRH_USERNAME"), getRequiredEnv("OSSRH_TOKEN"));
         String suffixesStr = getRequiredEnv("COMPANION_SUFFIXES");
-        List<String> suffixes = Stream.of(suffixesStr.split(",", -1))
-                .map(String::trim)
-                .toList();
+        List<String> suffixes =
+                Stream.of(suffixesStr.split(",", -1)).map(String::trim).toList();
         Path searchDir = Paths.get(getRequiredEnv("SEARCH_DIR"));
         Level logLevel = Level.parse(getRequiredEnv("LOG_LEVEL").toUpperCase(Locale.ROOT));
         long initialPause = Long.parseLong(getRequiredEnv("INITIAL_PAUSE"));
         long loopPause = Long.parseLong(getRequiredEnv("LOOP_PAUSE"));
-        TargetAction targetAction = TargetAction.valueOf(getRequiredEnv("TARGET_ACTION").toUpperCase(Locale.ROOT));
-        return new ActionArguments(gpgCert, searchDir, suffixes, logLevel, ossrhCreds, targetAction, initialPause, loopPause);
+        TargetAction targetAction =
+                TargetAction.valueOf(getRequiredEnv("TARGET_ACTION").toUpperCase(Locale.ROOT));
+        return new ActionArguments(
+                gpgCert, searchDir, suffixes, logLevel, ossrhCreds, targetAction, initialPause, loopPause);
     }
 
     /**
@@ -129,8 +139,8 @@ public record ActionArguments(GpgCertificate gpgCertificate, Path searchDir, Lis
     private static String getRequiredEnv(String envName) {
         String value = System.getenv(envName);
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(
-                    "Needs environment variable '" + envName + "' to be defined and non-blank. See readme/action.yaml!");
+            throw new IllegalArgumentException("Needs environment variable '" + envName
+                    + "' to be defined and non-blank. See readme/action.yaml!");
         }
         return value;
     }

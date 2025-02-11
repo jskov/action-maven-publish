@@ -1,5 +1,10 @@
 package dk.mada.fixture;
 
+import dk.mada.action.ActionArguments;
+import dk.mada.action.ActionArguments.GpgCertificate;
+import dk.mada.action.ActionArguments.OssrhCredentials;
+import dk.mada.action.BundlePublisher.TargetAction;
+import dk.mada.action.util.LoggerConfig;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -9,12 +14,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.logging.Level;
-
-import dk.mada.action.ActionArguments;
-import dk.mada.action.ActionArguments.GpgCertificate;
-import dk.mada.action.ActionArguments.OssrhCredentials;
-import dk.mada.action.BundlePublisher.TargetAction;
-import dk.mada.action.util.LoggerConfig;
 
 /**
  * Fixture for creating action arguments for tests.
@@ -26,6 +25,7 @@ public final class ArgumentsFixture {
     private static final long LOOP_DELAY = 10;
 
     private ArgumentsFixture() {
+        // empty
     }
 
     /** {@return action arguments based on test certificate} */
@@ -35,7 +35,14 @@ public final class ArgumentsFixture {
         OssrhCredentials ossrhCreds = ossrhCreds();
         Path tmpDir = Paths.get(System.getProperty("java.io.tmpdir"));
         List<String> emptySuffixes = List.of();
-        return new ActionArguments(gpgCert(), tmpDir, emptySuffixes, Level.FINEST, ossrhCreds, TargetAction.DROP, INITIAL_DELAY,
+        return new ActionArguments(
+                gpgCert(),
+                tmpDir,
+                emptySuffixes,
+                Level.FINEST,
+                ossrhCreds,
+                TargetAction.DROP,
+                INITIAL_DELAY,
                 LOOP_DELAY);
     }
 

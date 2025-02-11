@@ -51,8 +51,7 @@ public final class BundleCollector {
     public List<BundleSource> findBundleSources(Path searchDir, List<String> companionSuffixes) {
         try (Stream<Path> files = Files.walk(searchDir)) {
             // First find the POMs
-            List<Path> poms = files
-                    .filter(Files::isRegularFile)
+            List<Path> poms = files.filter(Files::isRegularFile)
                     .filter(p -> p.getFileName().toString().endsWith(".pom"))
                     .toList();
 
@@ -134,8 +133,7 @@ public final class BundleCollector {
      * @param bundleJar the packaged bundle jar, containing all source and signature files
      * @param files     the bundle constituents
      */
-    public record Bundle(Path bundleJar, BundleFiles files) {
-    }
+    public record Bundle(Path bundleJar, BundleFiles files) {}
 
     /**
      * All files in the bundle (sources and signatures).
@@ -143,8 +141,7 @@ public final class BundleCollector {
      * @param bundleSource the original bundle source
      * @param signatures   a list of created signatures for the assets
      */
-    public record BundleFiles(BundleSource bundleSource, List<Path> signatures) {
-    }
+    public record BundleFiles(BundleSource bundleSource, List<Path> signatures) {}
 
     /**
      * The original source files of a bundle.
@@ -152,6 +149,5 @@ public final class BundleCollector {
      * @param pom    the main POM file
      * @param assets a list of additional assets (may be empty)
      */
-    public record BundleSource(Path pom, List<Path> assets) {
-    }
+    public record BundleSource(Path pom, List<Path> assets) {}
 }
