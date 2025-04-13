@@ -2,6 +2,16 @@ package dk.mada.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.io.TempDir;
+
 import dk.mada.action.BundleCollector;
 import dk.mada.action.BundleCollector.Bundle;
 import dk.mada.action.BundlePublisher;
@@ -9,22 +19,15 @@ import dk.mada.action.BundlePublisher.ExecutedAction;
 import dk.mada.action.BundlePublisher.PublishingResult;
 import dk.mada.action.BundlePublisher.TargetAction;
 import dk.mada.fixture.TestInstances;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.junit.jupiter.api.io.TempDir;
 
 /**
- * The operations against OSSRH require credentials, so these can only be tested locally.
+ * The operations against Portal require credentials, so these can only be tested if
+ * you provide credentials.
  *
- * If you want to run the tests yourself (after reviewing the code, naturally), see
- * ArgumentsFixture:readOssrhCreds for how to provide the credentials.
+ * Do that via a file containing user:token and point to it via the environment variable 
+ * PORTAL_CREDENTIALS_PATH.
  */
-@EnabledIfEnvironmentVariable(named = "USERNAME", matches = "jskov", disabledReason = "Only runs locally")
+@EnabledIfEnvironmentVariable(named = "PORTAL_CREDENTIALS_PATH", matches = ".*", disabledReason = "Only runs when provided with credentials")
 public class BundlePublisherTest {
     /** Temporary directory to use for the test data. */
     @TempDir

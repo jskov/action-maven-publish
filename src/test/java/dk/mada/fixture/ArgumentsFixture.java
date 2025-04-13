@@ -52,15 +52,15 @@ public final class ArgumentsFixture {
     }
 
     /**
-     * Reads OSSRH user:token from $XDG_RUNTIME_DIR/ossrh-creds.txt if the file is available.
+     * Reads Portal user:token from PORTAL_CREDENTIALS_PATH if the file is available.
      *
      * @return the loaded OSSRH credentials or dummy credentials
      */
     public static OssrhCredentials ossrhCreds() {
         try {
-            String runtimePath = System.getenv("XDG_RUNTIME_DIR");
-            if (runtimePath != null) {
-                Path credsFile = Paths.get(runtimePath).resolve("ossrh-creds.txt");
+            String credendialsPath = System.getenv("PORTAL_CREDENTIALS_PATH");
+            if (credendialsPath != null) {
+                Path credsFile = Paths.get(credendialsPath);
                 if (Files.isRegularFile(credsFile)) {
                     String creds = Files.readString(credsFile).trim();
                     return new OssrhCredentials(creds.replaceFirst(":.*", ""), creds.replaceFirst("[^:]*:", ""));
