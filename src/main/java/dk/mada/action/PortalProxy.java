@@ -20,7 +20,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * A proxy for Maven Central <a href="https://central.sonatype.org/publish/publish-portal-api/">Repository Portal Publisher API</a> web service.
@@ -36,6 +35,9 @@ public class PortalProxy {
     private static final String UPLOAD_RESOURCE_PATH = "/api/v1/publisher/upload";
     /** The resource path for getting status of a bundle deployment. */
     private static final String STATUS_RESOURCE_PATH = "/api/v1/publisher/status";
+    /** The resource path for publishing/dropping a bundle. */
+    private static final String DEPLOYMENT_RESOURCE_PATH = "/api/v1/publisher/deployment";
+
     /** The User Agent used by the proxy calls. */
     private static final String[] USER_AGENT = new String[] {"User-Agent", "jskov_action-maven-publish"};
     /** Default timeout for uploading an artifact. */
@@ -146,7 +148,7 @@ public class PortalProxy {
      * @param headers headers to use (paired values)
      * @return the http response
      */
-    public HttpResponse<String> get(String path, String... headers) {
+    private HttpResponse<String> get(String path, String... headers) {
         return doGet(path, headers);
     }
 
@@ -199,20 +201,28 @@ public class PortalProxy {
     }
 
     /**
-     * Run action on staging repositories.
+     * Publish staging repositories.
      *
-     * Used to drop and release repositories. The path decides the action.
-     *
-     * @param path    the url path to push to
-     * @param repoIds a list of repositories IDs to include in the payload
-     * @return the http response
+     * @param repoIds a list of repositories IDs to publish
      */
-    public HttpResponse<String> stagingAction(String path, List<String> repoIds) {
-        String idList = repoIds.stream().map(id -> "\"" + id + "\"").collect(Collectors.joining(","));
+    public void publishRepositories(List<String> repoIds) {
+        for (String id : repoIds) {
+            HttpResponse<String> response = doPost(DEPLOYMENT_RESOURCE_PATH + "/" + id);
+            if (response.statusCode() != HttpURLConnection.HTTP_NO_CONTENT) {
+                throw new IllegalStateException(
+                        "Publishing " + id + " returned " + response.statusCode() + " : " + response.body());
+            }
+        }
+    }
 
-        String json = "{\"data\":{\"stagedRepositoryIds\":[" + idList + "]}}";
-
-        return doPost(path, json);
+    public void dropRepositories(List<String> repoIds) {
+        for (String id : repoIds) {
+            HttpResponse<String> response = doDelete(DEPLOYMENT_RESOURCE_PATH + "/" + id);
+            if (response.statusCode() != HttpURLConnection.HTTP_NO_CONTENT) {
+                throw new IllegalStateException(
+                        "Dropping " + id + " returned " + response.statusCode() + " : " + response.body());
+            }
+        }
     }
 
     /**
@@ -236,35 +246,57 @@ public class PortalProxy {
             return client.send(request, BodyHandlers.ofString());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while reading from " + path, e);
+            throw new IllegalStateException("Interrupted while GET from " + path, e);
         } catch (IOException e) {
-            throw new IllegalStateException("Failed while reading from " + path, e);
+            throw new IllegalStateException("Failed while GET from " + path, e);
         }
     }
 
     /**
-     * Posts json payload message.
+     * Posts to resource.
      *
      * @param path the path to post to
-     * @param json the json payload to push
      * @return the http response
      */
-    private HttpResponse<String> doPost(String path, String json) {
+    private HttpResponse<String> doPost(String path) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(PUBLISHER_API_BASE_URL + path))
                     .timeout(shortCallTimeout)
                     .headers(USER_AGENT)
                     .headers(authorizationHeader)
-                    .header("Content-Type", "application/json")
-                    .POST(BodyPublishers.ofString(json))
+                    .POST(BodyPublishers.noBody())
                     .build();
             return client.send(request, BodyHandlers.ofString());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while posting to " + path + " : " + json, e);
+            throw new IllegalStateException("Interrupted while POST to " + path, e);
         } catch (IOException e) {
-            throw new IllegalStateException("Failed while posting to " + path + " : " + json, e);
+            throw new IllegalStateException("Failed while POST to " + path, e);
+        }
+    }
+
+    /**
+     * Delete to resource.
+     *
+     * @param path the path to delete to
+     * @return the http response
+     */
+    private HttpResponse<String> doDelete(String path) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(PUBLISHER_API_BASE_URL + path))
+                    .timeout(shortCallTimeout)
+                    .headers(USER_AGENT)
+                    .headers(authorizationHeader)
+                    .DELETE()
+                    .build();
+            return client.send(request, BodyHandlers.ofString());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while DELETE to " + path, e);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed while DELETE to " + path, e);
         }
     }
 }

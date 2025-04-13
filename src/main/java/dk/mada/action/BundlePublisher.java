@@ -79,11 +79,11 @@ public final class BundlePublisher {
         ExecutedAction executedAction;
         if (allSucceeded && action == TargetAction.PROMOTE_OR_KEEP) {
             logger.info("Promoting repositories...");
-            proxy.stagingAction("/service/local/staging/bulk/promote", repoIds);
+            proxy.publishRepositories(repoIds);
             executedAction = ExecutedAction.PROMOTED;
         } else if (action == TargetAction.DROP) {
             logger.info("Dropping repositories...");
-            proxy.stagingAction("/service/local/staging/bulk/drop", repoIds);
+            proxy.dropRepositories(repoIds);
             executedAction = ExecutedAction.DROPPED;
         } else {
             // TargetAction.KEEP *or* failure so promotion cannot happen
