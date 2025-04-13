@@ -3,7 +3,7 @@ package dk.mada.fixture;
 import dk.mada.action.BundleCollector;
 import dk.mada.action.BundlePublisher;
 import dk.mada.action.GpgSigner;
-import dk.mada.action.OssrhProxy;
+import dk.mada.action.PortalProxy;
 
 /**
  * Provides test instances of the domain classes.
@@ -14,7 +14,7 @@ public final class TestInstances {
     /** The bundle collector test instance. */
     private static BundleCollector bundleCollector;
     /** The OSSRH proxy test instance. */
-    private static OssrhProxy ossrhProxy;
+    private static PortalProxy ossrhProxy;
     /** The bundle publisher test instance. */
     private static BundlePublisher bundlePublisher;
 
@@ -40,9 +40,9 @@ public final class TestInstances {
     }
 
     /** {@return an initialized ossrh proxy instance} */
-    public static OssrhProxy ossrhProxy() {
+    public static PortalProxy ossrhProxy() {
         if (ossrhProxy == null) {
-            ossrhProxy = new OssrhProxy(ArgumentsFixture.ossrhCreds());
+            ossrhProxy = new PortalProxy(ArgumentsFixture.ossrhCreds());
         }
         return ossrhProxy;
     }

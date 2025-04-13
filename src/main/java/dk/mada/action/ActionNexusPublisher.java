@@ -29,7 +29,7 @@ public final class ActionNexusPublisher {
         boolean failed;
         try (GpgSigner signer = new GpgSigner(args.gpgCertificate())) {
             BundleCollector bundleBuilder = new BundleCollector(signer);
-            OssrhProxy proxy = new OssrhProxy(args.ossrhCredentials());
+            PortalProxy proxy = new PortalProxy(args.ossrhCredentials());
             BundlePublisher bundlePublisher = new BundlePublisher(args, proxy);
             signer.loadSigningCertificate();
 

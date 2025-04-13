@@ -23,7 +23,7 @@ public final class BundlePublisher {
     /** Dummy id for unassigned repository. */
     private static final String REPO_ID_UNASSIGNED = "_unassigned_";
     /** The OSSRH proxy. */
-    private final OssrhProxy proxy;
+    private final PortalProxy proxy;
     /** The initial timeout to use for each bundle. */
     private final Duration initialProcessingPause;
     /** The timeout to use in each loop after the initial delay. */
@@ -35,7 +35,7 @@ public final class BundlePublisher {
      * @param args  the action arguments
      * @param proxy the proxy to use for OSSRH access
      */
-    public BundlePublisher(ActionArguments args, OssrhProxy proxy) {
+    public BundlePublisher(ActionArguments args, PortalProxy proxy) {
         this.proxy = proxy;
         initialProcessingPause = Duration.ofSeconds(args.initialPauseSeconds());
         loopPause = Duration.ofSeconds(args.loopPauseSeconds());
@@ -166,8 +166,8 @@ public final class BundlePublisher {
             return currentState;
         }
 
-        String repoId = currentState.assignedId;
-        HttpResponse<String> response = proxy.get("/service/local/staging/repository/" + repoId);
+        String deploymentId = currentState.assignedId;
+        HttpResponse<String> response = proxy.getDeploymentStatus(deploymentId);
         RepositoryStateInfo repoState = parseRepositoryState(response);
 
         Status newStatus;
@@ -229,15 +229,15 @@ public final class BundlePublisher {
      * Crudely extracts the assigned repository id from returned JSON.
      *
      * @param bundle   the bundle that was uploaded
-     * @param response the HTTP response from OSRRH
+     * @param response the HTTP response from the publish resource
      * @return the resulting bundle repository state
      */
     private BundleRepositoryState extractRepoId(Bundle bundle, HttpResponse<String> response) {
         int status = response.statusCode();
         String body = response.body();
 
-        if (status == HttpURLConnection.HTTP_CREATED && body.startsWith(RESPONSE_REPO_URI_PREFIX)) {
-            String repoId = body.substring(RESPONSE_REPO_URI_PREFIX.length()).replace("\"]}", "");
+        if (status == HttpURLConnection.HTTP_CREATED) {
+            String repoId = body;
             return new BundleRepositoryState(bundle, Status.UPLOADED, repoId, emptyStateInfo("Assigned id: " + repoId));
         } else {
             return new BundleRepositoryState(

@@ -95,9 +95,9 @@ public record ActionArguments(
             Objects.requireNonNull(token, "The OSSRH token must not be null");
         }
 
-        /** {@return the credentials for use in a Basic Authentication header} */
-        public String asBasicAuth() {
-            return "Basic "
+        /** {@return the credentials value for use in an Authentication header} */
+        public String asAuthenticationValue() {
+            return "Bearer "
                     + Base64.getEncoder().encodeToString((user() + ":" + token()).getBytes(StandardCharsets.UTF_8));
         }
 
