@@ -3,8 +3,6 @@ package dk.mada.action;
 import dk.mada.action.BundleCollector.Bundle;
 import dk.mada.action.PortalProxy.DeploymentState;
 import dk.mada.action.PortalProxy.RepositoryStateInfo;
-import java.net.HttpURLConnection;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.logging.Logger;
@@ -18,8 +16,6 @@ import java.util.stream.Collectors;
 public final class BundlePublisher {
     private static Logger logger = Logger.getLogger(BundlePublisher.class.getName());
 
-    /** Dummy id for unassigned repository. */
-    private static final String REPO_ID_UNASSIGNED = "_unassigned_";
     /** The Portal proxy. */
     private final PortalProxy proxy;
     /** The initial timeout to use for each bundle. */
@@ -62,7 +58,7 @@ public final class BundlePublisher {
      */
     public PublishingResult publish(List<Bundle> bundles, TargetAction action) {
         List<BundleRepositoryState> initialBundleStates =
-                bundles.stream().map(this::uploadBundle).toList();
+                bundles.stream().map(proxy::uploadBundle).toList();
 
         logger.info(() -> "Uploaded bundles:\n" + makeSummary(initialBundleStates));
 
@@ -122,16 +118,16 @@ public final class BundlePublisher {
 
     // TODO: Should include maven repo paths (repositoryURI from status)
     private String makeSummary(List<BundleRepositoryState> initialBundleStates) {
-        return " "
-                + initialBundleStates.stream()
-                        .map(bs -> bs.bundle().bundleJar().getFileName() + " repo:" + bs.assignedId() + ", status: "
-                                + bs.latestStateInfo.state())
-                        .collect(Collectors.joining("\n "));
+        return " " + initialBundleStates.stream().map(this::summaryRepo).collect(Collectors.joining("\n "));
     }
 
-    private BundleRepositoryState uploadBundle(Bundle bundle) {
-        HttpResponse<String> response = proxy.uploadBundle(bundle);
-        return extractRepoId(bundle, response);
+    private String summaryRepo(BundleRepositoryState bs) {
+        String summary =
+                bs.bundle().bundleJar().getFileName() + " repo:" + bs.assignedId() + ", status: " + bs.status();
+        if (bs.status() == DeploymentState.FAILED) {
+            summary += " [" + bs.latestStateInfo().info() + "]";
+        }
+        return summary;
     }
 
     private List<BundleRepositoryState> waitForRepositoriesToSettle(List<BundleRepositoryState> bundleStates) {
@@ -174,7 +170,7 @@ public final class BundlePublisher {
      *
      * @param bundle          the bundle
      * @param assignedId      the assigned repository id
-     * @param latestStateInfo the latest returned state information (note, may be from emptyStateInfo())
+     * @param latestStateInfo the latest returned state information
      */
     public record BundleRepositoryState(Bundle bundle, String assignedId, RepositoryStateInfo latestStateInfo) {
 
@@ -186,28 +182,6 @@ public final class BundlePublisher {
         /** {@return the latest repository status} */
         public DeploymentState status() {
             return latestStateInfo.state();
-        }
-    }
-
-    /**
-     * Crudely extracts the assigned repository id from returned JSON.
-     *
-     * @param bundle   the bundle that was uploaded
-     * @param response the HTTP response from the publish resource
-     * @return the resulting bundle repository state
-     */
-    private BundleRepositoryState extractRepoId(Bundle bundle, HttpResponse<String> response) {
-        int status = response.statusCode();
-        String body = response.body();
-
-        if (status == HttpURLConnection.HTTP_CREATED) {
-            String repoId = body;
-            return new BundleRepositoryState(bundle, repoId, RepositoryStateInfo.empty("Assigned id: " + repoId));
-        } else {
-            return new BundleRepositoryState(
-                    bundle,
-                    REPO_ID_UNASSIGNED,
-                    RepositoryStateInfo.failed("Upload status: " + status + ", message: " + body));
         }
     }
 

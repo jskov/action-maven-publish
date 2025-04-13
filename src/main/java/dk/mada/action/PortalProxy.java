@@ -1,10 +1,5 @@
 package dk.mada.action;
 
-import dk.mada.action.ActionArguments.OssrhCredentials;
-import dk.mada.action.BundleCollector.Bundle;
-import dk.mada.action.PortalProxy.RepositoryStateInfo;
-import dk.mada.action.util.EphemeralCookieHandler;
-import dk.mada.action.util.JsonExtractor;
 import java.io.IOException;
 import java.net.CookieHandler;
 import java.net.HttpURLConnection;
@@ -16,19 +11,23 @@ import java.net.http.HttpRequest.BodyPublisher;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.logging.Logger;
+
+import dk.mada.action.ActionArguments.OssrhCredentials;
+import dk.mada.action.BundleCollector.Bundle;
+import dk.mada.action.BundlePublisher.BundleRepositoryState;
+import dk.mada.action.util.EphemeralCookieHandler;
+import dk.mada.action.util.JsonExtractor;
 
 /**
  * A proxy for Maven Central <a href="https://central.sonatype.org/publish/publish-portal-api/">Repository Portal Publisher API</a> web service.
- *
- * The first call will cause authentication which will provide a cookie token used for following calls.
- *
- * Note: this will have to change when the new Central Portal publishing goes live.
  */
 public class PortalProxy {
+    private static Logger logger = Logger.getLogger(PortalProxy.class.getName());
+
     /** The base URL for the Publisher Api. */
     private static final String PUBLISHER_API_BASE_URL = "https://central.sonatype.com";
     /** The resource path for uploading a bundle. */
@@ -37,6 +36,8 @@ public class PortalProxy {
     private static final String STATUS_RESOURCE_PATH = "/api/v1/publisher/status";
     /** The resource path for publishing/dropping a bundle. */
     private static final String DEPLOYMENT_RESOURCE_PATH = "/api/v1/publisher/deployment";
+    /** Dummy id for unassigned repository. */
+    private static final String REPO_ID_UNASSIGNED = "_unassigned_";
 
     /** The User Agent used by the proxy calls. */
     private static final String[] USER_AGENT = new String[] {"User-Agent", "jskov_action-maven-publish"};
@@ -160,7 +161,7 @@ public class PortalProxy {
      * @param bundle the bundle file to upload
      * @return the http response
      */
-    public HttpResponse<String> uploadBundle(Bundle bundle) {
+    public BundleRepositoryState uploadBundle(Bundle bundle) {
         Path file = bundle.bundleJar();
         try {
             // As per the MIME spec, the marker should be ASCII and not match anything in the encapsulated sections.
@@ -169,9 +170,9 @@ public class PortalProxy {
             String mimeNewline = "\r\n";
             String formIntro = ""
                     + "--" + boundaryMarker + mimeNewline
-                    + "Content-Disposition: form-data; name=\"file\"; filename=\"" + file.getFileName() + "\""
+                    + "Content-Disposition: form-data; name=\"bundle\"; filename=\"" + file.getFileName() + "\""
                     + mimeNewline
-                    + "Content-Type: " + Files.probeContentType(file) + mimeNewline
+                    + "Content-Type: " + "application/octet-stream" + mimeNewline
                     + mimeNewline; // (empty line between form instructions and the data)
 
             String formOutro = ""
@@ -183,6 +184,7 @@ public class PortalProxy {
                     BodyPublishers.ofFile(file),
                     BodyPublishers.ofString(formOutro));
 
+            
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(PUBLISHER_API_BASE_URL + UPLOAD_RESOURCE_PATH))
                     .timeout(uploadTimeout)
@@ -191,7 +193,26 @@ public class PortalProxy {
                     .header("Content-Type", "multipart/form-data; boundary=" + boundaryMarker)
                     .POST(body)
                     .build();
-            return client.send(request, BodyHandlers.ofString());
+
+            logger.info(() -> "Calling " + request.method() + " on " + request.uri());
+
+            HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+
+            int status = response.statusCode();
+            String responseBody = response.body();
+
+            logger.info(() -> "Response " + status + " msg " + responseBody);
+
+            if (status == HttpURLConnection.HTTP_CREATED) {
+                String repoId = responseBody;
+                return new BundleRepositoryState(bundle, repoId, RepositoryStateInfo.empty("Assigned id: " + repoId));
+            } else {
+                return new BundleRepositoryState(
+                        bundle,
+                        REPO_ID_UNASSIGNED,
+                        RepositoryStateInfo.failed(
+                                "Failed to upload bundle (" + status + "), message: " + responseBody));
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted while uploading bundle " + bundle, e);
