@@ -1,7 +1,7 @@
 # action-maven-publish
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=jskov_action-maven-publish&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=jskov_action-maven-publish)
 
-This Action will [sign and publish](https://central.sonatype.org/publish/publish-manual/) Maven artifacts to [MavenCentral](https://central.sonatype.org/) for security aware (and/or paranoid) developers.
+This Action will [sign and publish](https://central.sonatype.org/publish/publish-portal-api/) Maven artifacts to [MavenCentral](https://central.sonatype.org/) for security aware (and/or paranoid) developers.
 
 ## Simple(r) and Transparent
 
