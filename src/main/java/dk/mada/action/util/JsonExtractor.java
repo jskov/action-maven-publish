@@ -57,7 +57,7 @@ public class JsonExtractor {
                 fi = json.indexOf('"' + fieldName + '"');
             }
             if (fi == -1) {
-                new IllegalStateException("Found no field: " + fieldName + " in: " + json);
+                throw new IllegalStateException("Found no field: " + fieldName + " in: " + json);
             }
 
             // fi is the index of the field. Look for a (quoted) value string after.

@@ -1,7 +1,8 @@
 package dk.mada.action;
 
 import dk.mada.action.BundleCollector.Bundle;
-import dk.mada.action.util.XmlExtractor;
+import dk.mada.action.PortalProxy.DeploymentState;
+import dk.mada.action.PortalProxy.RepositoryStateInfo;
 import java.net.HttpURLConnection;
 import java.net.http.HttpResponse;
 import java.time.Duration;
@@ -17,12 +18,9 @@ import java.util.stream.Collectors;
 public final class BundlePublisher {
     private static Logger logger = Logger.getLogger(BundlePublisher.class.getName());
 
-    /** The expected prefix in response when creating new repository. */
-    private static final String RESPONSE_REPO_URI_PREFIX =
-            "{\"repositoryUris\":[\"https://s01.oss.sonatype.org/content/repositories/";
     /** Dummy id for unassigned repository. */
     private static final String REPO_ID_UNASSIGNED = "_unassigned_";
-    /** The OSSRH proxy. */
+    /** The Portal proxy. */
     private final PortalProxy proxy;
     /** The initial timeout to use for each bundle. */
     private final Duration initialProcessingPause;
@@ -76,7 +74,7 @@ public final class BundlePublisher {
         List<String> repoIds =
                 finalBundleStates.stream().map(brs -> brs.assignedId).toList();
 
-        boolean allSucceeded = finalBundleStates.stream().allMatch(brs -> brs.status() == Status.VALIDATED);
+        boolean allSucceeded = finalBundleStates.stream().allMatch(brs -> brs.status() == DeploymentState.VALIDATED);
 
         ExecutedAction executedAction;
         if (allSucceeded && action == TargetAction.PROMOTE_OR_KEEP) {
@@ -127,7 +125,7 @@ public final class BundlePublisher {
         return " "
                 + initialBundleStates.stream()
                         .map(bs -> bs.bundle().bundleJar().getFileName() + " repo:" + bs.assignedId() + ", status: "
-                                + bs.status)
+                                + bs.latestStateInfo.state())
                         .collect(Collectors.joining("\n "));
     }
 
@@ -149,9 +147,8 @@ public final class BundlePublisher {
 
             // Pause period for next loop depending on how
             // many bundles are actively being processed
-            long bundlesInTransition = updatedStates.stream()
-                    .filter(rs -> rs.status().isTransitioning())
-                    .count();
+            long bundlesInTransition =
+                    updatedStates.stream().filter(rs -> rs.isTransitioning()).count();
             delay = loopPause.multipliedBy(bundlesInTransition);
             logger.info(() -> " (" + bundlesInTransition + " bundles still processing)");
 
@@ -162,68 +159,35 @@ public final class BundlePublisher {
     }
 
     private BundleRepositoryState updateRepoState(BundleRepositoryState currentState) {
-        if (!currentState.status.isTransitioning()) {
+        if (!currentState.isTransitioning()) {
             return currentState;
         }
 
         String deploymentId = currentState.assignedId;
-        HttpResponse<String> response = proxy.getDeploymentStatus(deploymentId);
-        RepositoryStateInfo repoState = parseRepositoryState(response);
+        RepositoryStateInfo repoState = proxy.getDeploymentStatus(deploymentId);
 
-        Status newStatus;
-        if (repoState.transitioning) {
-            newStatus = currentState.status();
-        } else {
-            if (repoState.notifications == 0) {
-                newStatus = Status.VALIDATED;
-            } else {
-                newStatus = Status.FAILED_VALIDATION;
-            }
-        }
-        return new BundleRepositoryState(currentState.bundle(), newStatus, currentState.assignedId(), repoState);
-    }
-
-    private record RepositoryStateInfo(int notifications, boolean transitioning, String info) {}
-
-    private RepositoryStateInfo parseRepositoryState(HttpResponse<String> response) {
-        int status = response.statusCode();
-        String body = response.body();
-        if (status != HttpURLConnection.HTTP_OK) {
-            return new RepositoryStateInfo(
-                    -1, false, "Failed repository probe; status: " + status + ", message: " + body);
-        }
-        XmlExtractor xe = new XmlExtractor(body);
-        return new RepositoryStateInfo(xe.getInt("notifications"), xe.getBool("transitioning"), body);
-    }
-
-    /**
-     * OSSRH repository states.
-     */
-    public enum Status {
-        /** The upload failed. Terminal state. */
-        FAILED_UPLOAD,
-        /** The bundle was uploaded. Should transition to FAILED_VALIDATION or VALIDATED. */
-        UPLOADED,
-        /** The validation failed. Terminal state. */
-        FAILED_VALIDATION,
-        /** The validation succeeded. Terminal state. */
-        VALIDATED;
-
-        boolean isTransitioning() {
-            return this == UPLOADED;
-        }
+        return new BundleRepositoryState(currentState.bundle(), currentState.assignedId(), repoState);
     }
 
     /**
      * The bundle's repository state.
      *
      * @param bundle          the bundle
-     * @param status          the current repository status
      * @param assignedId      the assigned repository id
      * @param latestStateInfo the latest returned state information (note, may be from emptyStateInfo())
      */
-    public record BundleRepositoryState(
-            Bundle bundle, Status status, String assignedId, RepositoryStateInfo latestStateInfo) {}
+    public record BundleRepositoryState(Bundle bundle, String assignedId, RepositoryStateInfo latestStateInfo) {
+
+        /** {@return true if the latest repository state still is in transition} */
+        public boolean isTransitioning() {
+            return status().isTransitioning();
+        }
+
+        /** {@return the latest repository status} */
+        public DeploymentState status() {
+            return latestStateInfo.state();
+        }
+    }
 
     /**
      * Crudely extracts the assigned repository id from returned JSON.
@@ -238,18 +202,13 @@ public final class BundlePublisher {
 
         if (status == HttpURLConnection.HTTP_CREATED) {
             String repoId = body;
-            return new BundleRepositoryState(bundle, Status.UPLOADED, repoId, emptyStateInfo("Assigned id: " + repoId));
+            return new BundleRepositoryState(bundle, repoId, RepositoryStateInfo.empty("Assigned id: " + repoId));
         } else {
             return new BundleRepositoryState(
                     bundle,
-                    Status.FAILED_UPLOAD,
                     REPO_ID_UNASSIGNED,
-                    emptyStateInfo("Upload status: " + status + ", message: " + body));
+                    RepositoryStateInfo.failed("Upload status: " + status + ", message: " + body));
         }
-    }
-
-    private RepositoryStateInfo emptyStateInfo(String info) {
-        return new RepositoryStateInfo(-1, false, info);
     }
 
     /**

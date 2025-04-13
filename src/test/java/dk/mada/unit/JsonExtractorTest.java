@@ -9,9 +9,9 @@ import org.junit.jupiter.api.Test;
  * Test of the crude Json field extractor.
  */
 class JsonExtractorTest {
-	/**
-	 * Tests that string and boolean fields can be extracted.
-	 */
+    /**
+     * Tests that string and boolean fields can be extracted.
+     */
     @Test
     void canExtractFromExample() {
         String exampleJson =
