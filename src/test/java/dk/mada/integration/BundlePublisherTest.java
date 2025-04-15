@@ -19,12 +19,16 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * The operations against OSSRH require credentials, so these can only be tested locally.
+ * The operations against Portal require credentials, so these can only be tested if
+ * you provide credentials.
  *
- * If you want to run the tests yourself (after reviewing the code, naturally), see
- * ArgumentsFixture:readOssrhCreds for how to provide the credentials.
+ * Do that via a file containing user:token and point to it via the environment variable
+ * PORTAL_CREDENTIALS_PATH.
  */
-@EnabledIfEnvironmentVariable(named = "USERNAME", matches = "jskov", disabledReason = "Only runs locally")
+@EnabledIfEnvironmentVariable(
+        named = "PORTAL_CREDENTIALS_PATH",
+        matches = ".*",
+        disabledReason = "Only runs when provided with credentials")
 public class BundlePublisherTest {
     /** Temporary directory to use for the test data. */
     @TempDir

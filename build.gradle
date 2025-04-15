@@ -22,6 +22,8 @@ java {
 }
 
 test {
+    inputs.property('portal-auth-file', ""+System.getenv('PORTAL_CREDENTIALS_PATH'))
+
     useJUnitPlatform()
     testLogging.showStandardStreams = true
 }
