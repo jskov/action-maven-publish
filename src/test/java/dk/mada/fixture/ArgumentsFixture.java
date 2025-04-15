@@ -4,7 +4,6 @@ import dk.mada.action.ActionArguments;
 import dk.mada.action.ActionArguments.GpgCertificate;
 import dk.mada.action.ActionArguments.PortalCredentials;
 import dk.mada.action.BundlePublisher.TargetAction;
-import dk.mada.action.util.LoggerConfig;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -30,8 +29,6 @@ public final class ArgumentsFixture {
 
     /** {@return action arguments based on test certificate} */
     public static ActionArguments withGpg() {
-        LoggerConfig.loadConfig("/test-logging.properties");
-
         PortalCredentials portalCreds = portalCreds();
         Path tmpDir = Paths.get(System.getProperty("java.io.tmpdir"));
         List<String> emptySuffixes = List.of();

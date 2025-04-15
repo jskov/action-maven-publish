@@ -8,6 +8,7 @@ import dk.mada.action.BundlePublisher;
 import dk.mada.action.BundlePublisher.ExecutedAction;
 import dk.mada.action.BundlePublisher.PublishingResult;
 import dk.mada.action.BundlePublisher.TargetAction;
+import dk.mada.action.util.LoggerConfig;
 import dk.mada.fixture.BundlePrepperFixture;
 import dk.mada.fixture.TestInstances;
 import java.io.IOException;
@@ -42,6 +43,7 @@ public class BundlePublisherTest {
      */
     @Test
     void canPublishAndDrop() throws IOException {
+        LoggerConfig.loadConfig("/test-logging.properties");
         logger.info("Bundle built in " + workDir);
 
         String pomName = "action-maven-publish-test-0.0.0.pom";

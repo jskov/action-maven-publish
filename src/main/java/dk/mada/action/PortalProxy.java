@@ -32,11 +32,14 @@ public final class PortalProxy {
     /** The base URL for the Publisher Api. */
     private static final String PUBLISHER_API_BASE_URL = "https://central.sonatype.com";
     /** The resource path for uploading a bundle. */
-    private static final String UPLOAD_RESOURCE_PATH = "/api/v1/publisher/upload";
+    private static final String UPLOAD_RESOURCE_PATH =
+            "/api/v1/publisher/upload"; // NOSONAR - not concerned with Android configuration
     /** The resource path for getting status of a bundle deployment. */
-    private static final String STATUS_RESOURCE_PATH = "/api/v1/publisher/status";
+    private static final String STATUS_RESOURCE_PATH =
+            "/api/v1/publisher/status"; // NOSONAR - not concerned with Android configuration
     /** The resource path for publishing/dropping a bundle. */
-    private static final String DEPLOYMENT_RESOURCE_PATH = "/api/v1/publisher/deployment";
+    private static final String DEPLOYMENT_RESOURCE_PATH =
+            "/api/v1/publisher/deployment"; // NOSONAR - not concerned with Android configuration
     /** Dummy id for unassigned repository. */
     private static final String REPO_ID_UNASSIGNED = "_unassigned_";
 
@@ -225,14 +228,12 @@ public final class PortalProxy {
                     .POST(body)
                     .build();
 
-            logger.fine(() -> "Calling " + request.method() + " on " + request.uri());
-
+            logCall(request);
             HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+            logResponse(response);
 
             int status = response.statusCode();
             String responseBody = response.body();
-
-            logger.fine(() -> "Response " + status + " msg " + responseBody);
 
             if (status == HttpURLConnection.HTTP_CREATED) {
                 String repoId = responseBody;
@@ -302,9 +303,11 @@ public final class PortalProxy {
             }
             HttpRequest request = builder.GET().build();
 
-            logger.fine(() -> "Calling " + request.method() + " on " + request.uri());
+            logCall(request);
+            HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+            logResponse(response);
 
-            return client.send(request, BodyHandlers.ofString());
+            return response;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted while GET from " + path, e);
@@ -329,9 +332,11 @@ public final class PortalProxy {
                     .POST(BodyPublishers.noBody())
                     .build();
 
-            logger.fine(() -> "Calling " + request.method() + " on " + request.uri());
+            logCall(request);
+            HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+            logResponse(response);
 
-            return client.send(request, BodyHandlers.ofString());
+            return response;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted while POST to " + path, e);
@@ -356,14 +361,34 @@ public final class PortalProxy {
                     .DELETE()
                     .build();
 
-            logger.fine(() -> "Calling " + request.method() + " on " + request.uri());
+            logCall(request);
+            HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+            logResponse(response);
 
-            return client.send(request, BodyHandlers.ofString());
+            return response;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted while DELETE to " + path, e);
         } catch (IOException e) {
             throw new IllegalStateException("Failed while DELETE to " + path, e);
         }
+    }
+
+    /**
+     * Logs a REST call.
+     *
+     * @param request the request to log
+     */
+    private void logCall(HttpRequest request) {
+        logger.fine(() -> "Calling " + request.method() + " on " + request.uri());
+    }
+
+    /**
+     * Logs a REST response.
+     *
+     * @param
+     */
+    private void logResponse(HttpResponse<String> response) {
+        logger.fine(() -> "Response " + response.statusCode() + " body " + response.body());
     }
 }
