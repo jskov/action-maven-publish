@@ -54,7 +54,7 @@ public class BundlePublisherTest {
 
         BundlePublisher sut = TestInstances.bundlePublisher();
 
-        PublishingResult result = sut.publish(bundles, TargetAction.DROP);
+        PublishingResult result = sut.publish(bundles, TargetAction.KEEP);
 
         // The publish operation will now always results in failure since the artifacts
         // are expected to be signed by a known certificate (and they are not).

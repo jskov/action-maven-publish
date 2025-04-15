@@ -2,7 +2,6 @@ package dk.mada.action;
 
 import dk.mada.action.ActionArguments.PortalCredentials;
 import dk.mada.action.BundleCollector.Bundle;
-import dk.mada.action.BundlePublisher.BundleRepositoryState;
 import dk.mada.action.util.EphemeralCookieHandler;
 import dk.mada.action.util.JsonExtractor;
 import java.io.IOException;
