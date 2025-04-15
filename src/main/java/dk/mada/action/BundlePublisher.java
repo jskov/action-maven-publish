@@ -1,5 +1,6 @@
 package dk.mada.action;
 
+import dk.mada.action.ActionArguments.TargetAction;
 import dk.mada.action.BundleCollector.Bundle;
 import dk.mada.action.PortalProxy.DeploymentState;
 import dk.mada.action.PortalProxy.RepositoryStateInfo;
@@ -33,18 +34,6 @@ public final class BundlePublisher {
         this.proxy = proxy;
         initialProcessingPause = Duration.ofSeconds(args.initialPauseSeconds());
         loopPause = Duration.ofSeconds(args.loopPauseSeconds());
-    }
-
-    /**
-     * The action to apply on the repositories when they have settled.
-     */
-    public enum TargetAction {
-        /** Drop (delete). */
-        DROP,
-        /** Keep repositories - you can use the listed URLs for testing. You must drop manually. */
-        KEEP,
-        /** Promote repositories if they all pass validation. Otherwise keep (so you can inspect and drop manually). */
-        PROMOTE_OR_KEEP
     }
 
     /**

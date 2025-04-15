@@ -1,6 +1,5 @@
 package dk.mada.action;
 
-import dk.mada.action.BundlePublisher.TargetAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -143,5 +142,17 @@ public record ActionArguments(
                     + "' to be defined and non-blank. See readme/action.yaml!");
         }
         return value;
+    }
+
+    /**
+     * The action to apply on the repositories when they have settled.
+     */
+    public enum TargetAction {
+        /** Drop (delete). */
+        DROP,
+        /** Keep repositories - you can use the listed URLs for testing. You must drop manually. */
+        KEEP,
+        /** Promote repositories if they all pass validation. Otherwise keep (so you can inspect and drop manually). */
+        PROMOTE_OR_KEEP
     }
 }

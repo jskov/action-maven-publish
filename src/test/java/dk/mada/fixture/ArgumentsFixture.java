@@ -3,7 +3,7 @@ package dk.mada.fixture;
 import dk.mada.action.ActionArguments;
 import dk.mada.action.ActionArguments.GpgCertificate;
 import dk.mada.action.ActionArguments.PortalCredentials;
-import dk.mada.action.BundlePublisher.TargetAction;
+import dk.mada.action.ActionArguments.TargetAction;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
