@@ -23,35 +23,20 @@ public class JsonExtractor {
     }
 
     /**
-     * {@return the field value as an integer}
+     * Finds a field value in the JSON.
+     *
+     * This method implementation is complex, but it simply looks for the quoted field
+     * and then iterates through the following characters until it has captured a value.
+     *
+     * The comments include hints about where in the search string each section is active.
      *
      * @param fieldName the field name
-     */
-    public int getInt(String fieldName) {
-        String value = get(fieldName);
-        try {
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            throw new IllegalStateException("Failed to convert integer field " + fieldName + " value: " + value, e);
-        }
-    }
-
-    /**
-     * {@return the field value as a boolean}
-     *
-     * @param fieldName the field name
-     */
-    public boolean getBool(String fieldName) {
-        return Boolean.parseBoolean(get(fieldName));
-    }
-
-    /**
-     * {@return the field value}
-     *
-     * @param fieldName the field name
+     * @return the field value
      */
     public String get(String fieldName) {
         try {
+            // First finds the first index of the desired (quoted) field name
+            // ....'fieldName'  :  'fieldValue'....
             int fi = json.indexOf("'" + fieldName + "'");
             if (fi == -1) {
                 fi = json.indexOf('"' + fieldName + '"');
@@ -60,11 +45,18 @@ public class JsonExtractor {
                 throw new IllegalStateException("Found no field: " + fieldName + " in: " + json);
             }
 
-            // fi is the index of the field. Look for a (quoted) value string after.
-            boolean valueStarted = false;
-            char quote = 0;
-            boolean escaped = false;
-            String value = "";
+            // Now fi is the index of the field.
+            // ....'fieldName'  :  'fieldValue'....
+            //     ^
+
+            boolean valueStarted = false; // flag for value capture having started
+            char quote = 0; // the active quote character if any
+            boolean escaped = false; // flag for previous character being an escape
+            StringBuilder value = new StringBuilder();
+
+            // Starting a index i, look for the (quoted) value string that should follow.
+            // ....'fieldName'  :  'fieldValue'....
+            //                ^
             for (int i = fi + fieldName.length() + 2; i < json.length(); i++) {
                 char c = json.charAt(i);
                 if (!valueStarted && (c == ':' || Character.isWhitespace(c))) {
@@ -73,6 +65,9 @@ public class JsonExtractor {
                 }
 
                 if (!valueStarted) {
+                    // ....'fieldName'  :  'fieldValue'....
+                    //                     ^
+
                     // 1st character should be a start quote...
                     valueStarted = true;
                     if ('\'' == c || '"' == c) {
@@ -87,15 +82,19 @@ public class JsonExtractor {
                 }
 
                 // Look for the end of the value now
-                if ((quote == 0 && (',' == c || Character.isWhitespace(c))) || (quote == c && !escaped)) {
+                boolean noQuteEnd = quote == 0 && (',' == c || '}' == c || Character.isWhitespace(c));
+                boolean quoteEnd = quote == c && !escaped;
+                if (noQuteEnd || quoteEnd) {
                     break;
                 }
 
-                value = value + c;
+                value.append(c);
+
+                // If current character is escape, prevents next quoteEnd from matching
                 escaped = c == '\\';
             }
 
-            return value;
+            return value.toString();
         } catch (IndexOutOfBoundsException e) {
             throw new IllegalStateException("Failed to extract field: " + fieldName + " from: " + json, e);
         }
