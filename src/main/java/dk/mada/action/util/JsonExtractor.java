@@ -40,7 +40,7 @@ public class JsonExtractor {
         // ....'fieldName'  :  'fieldValue'....
         //                ^
         i = findFieldValueStart(i);
-        
+
         // ....'fieldName'  :  'fieldValue'....
         //                     ^
         char quote; // the active quote character if any
