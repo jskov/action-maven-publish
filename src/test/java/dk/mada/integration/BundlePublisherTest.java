@@ -60,7 +60,7 @@ public class BundlePublisherTest {
         // At present (2025.04.15) the status request replies 500 so this test cannot
         // be changed to verify the one expected failure.
         // Nor does it manage to actually drop the repository.
-        
+
         assertThat(result.finalStates()).isNotEmpty();
         assertThat(result.allReposValid()).isFalse();
         assertThat(result.executedAction()).isEqualTo(ExecutedAction.DROPPED);

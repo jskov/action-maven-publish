@@ -22,7 +22,9 @@ import java.util.List;
 import java.util.logging.Logger;
 
 /**
- * A proxy for Maven Central <a href="https://central.sonatype.org/publish/publish-portal-api/">Repository Portal Publisher API</a> web service.
+ * A proxy for Maven Central
+ * <a href="https://central.sonatype.org/publish/publish-portal-api/">Repository
+ * Portal Publisher API</a> web service.
  */
 public final class PortalProxy {
     private static Logger logger = Logger.getLogger(PortalProxy.class.getName());
@@ -61,17 +63,29 @@ public final class PortalProxy {
      * The deployment status from the Publisher API
      */
     public enum DeploymentState {
-        /** A deployment is uploaded and waiting for processing by the validation service. */
+        /**
+         * A deployment is uploaded and waiting for processing by the validation
+         * service.
+         */
         PENDING(true),
         /** A deployment is being processed by the validation service. */
         VALIDATING(true),
-        /** A deployment has passed validation and is waiting on a user to manually publish via the Central Portal UI. */
+        /**
+         * A deployment has passed validation and is waiting on a user to manually
+         * publish via the Central Portal UI.
+         */
         VALIDATED(false),
-        /** A deployment has been either automatically or manually published and is being uploaded to Maven Central. */
+        /**
+         * A deployment has been either automatically or manually published and is being
+         * uploaded to Maven Central.
+         */
         PUBLISHING(true),
         /** A deployment has successfully been uploaded to Maven Central. */
         PUBLISHED(false),
-        /** A deployment has encountered an error (additional context will be present in an errors field). */
+        /**
+         * A deployment has encountered an error (additional context will be present in
+         * an errors field).
+         */
         FAILED(false);
 
         /** Flag for deployment process still transitioning. */
@@ -91,16 +105,16 @@ public final class PortalProxy {
      * The current repository state.
      *
      * @param state the current deployment state
-     * @param info any additional information
+     * @param info  any additional information
      */
     public record RepositoryStateInfo(DeploymentState state, String info) {
 
-    	/**
-    	 * Constructs an empty placeholder state (PENDING).
-    	 *
-    	 * @param info the information to include
-    	 * @return an empty placeholder state
-    	 */
+        /**
+         * Constructs an empty placeholder state (PENDING).
+         *
+         * @param info the information to include
+         * @return an empty placeholder state
+         */
         public static RepositoryStateInfo empty(String info) {
             return new RepositoryStateInfo(DeploymentState.PENDING, info);
         }
@@ -108,8 +122,8 @@ public final class PortalProxy {
         /**
          * Constructs a failed placeholder state (FAILED)
          *
-    	 * @param info the information to include
-    	 * @return a failed placeholder state
+         * @param info the information to include
+         * @return a failed placeholder state
          */
         public static RepositoryStateInfo failed(String info) {
             return new RepositoryStateInfo(DeploymentState.FAILED, info);
@@ -175,7 +189,7 @@ public final class PortalProxy {
     /**
      * Uploads file to Portal using POST multipart/form-data.
      *
-     * @see https://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.2
+     * @see <a href="https://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.2">HTLM forms spec</a>
      *
      * @param bundle the bundle file to upload
      * @return the http response
@@ -183,19 +197,23 @@ public final class PortalProxy {
     public BundleRepositoryState uploadBundle(Bundle bundle) {
         Path file = bundle.bundleJar();
         try {
-            // As per the MIME spec, the marker should be ASCII and not match anything in the encapsulated sections.
+            // As per the MIME spec, the marker should be ASCII and not match anything in
+            // the encapsulated sections.
             // Just using a random string (similar to the one in the forms spec).
             String boundaryMarker = "AaB03xyz30BaA";
             String mimeNewline = "\r\n";
-            String formIntro = ""
-                    + "--" + boundaryMarker + mimeNewline
+            String formIntro = "" + "--" + boundaryMarker + mimeNewline
                     + "Content-Disposition: form-data; name=\"bundle\"; filename=\"" + file.getFileName() + "\""
-                    + mimeNewline
-                    + "Content-Type: " + "application/octet-stream" + mimeNewline
-                    + mimeNewline; // (empty line between form instructions and the data)
+                    + mimeNewline + "Content-Type: " + "application/octet-stream" + mimeNewline + mimeNewline; // (empty
+            // line
+            // between
+            // form
+            // instructions
+            // and
+            // the
+            // data)
 
-            String formOutro = ""
-                    + mimeNewline // for the binary data
+            String formOutro = "" + mimeNewline // for the binary data
                     + "--" + boundaryMarker + "--" + mimeNewline;
 
             BodyPublisher body = BodyPublishers.concat(
@@ -254,6 +272,11 @@ public final class PortalProxy {
         }
     }
 
+    /**
+     * Drop staging repositories.
+     *
+     * @param repoIds a list of repositories IDs to drop
+     */
     public void dropRepositories(List<String> repoIds) {
         for (String id : repoIds) {
             HttpResponse<String> response = doDelete(DEPLOYMENT_RESOURCE_PATH + "/" + id);

@@ -189,7 +189,7 @@ public final class BundleCollector {
      * @param pomFile  the POM file
      * @param group    the artifact group
      * @param artifact the artifact name
-     * @param group    the artifact version
+     * @param version    the artifact version
      */
     public record Pom(Path pomFile, String group, String artifact, String version) {}
 
