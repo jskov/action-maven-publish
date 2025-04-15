@@ -49,14 +49,14 @@ class BundleCollectorTest {
                     .allSatisfy(p -> assertThat(p).isNotEmptyFile());
             assertThat(filesIn(bundle.bundleJar()))
                     .containsExactlyInAnyOrder(
-                            "bundle.pom",
-                            "bundle.pom.asc",
-                            "bundle.pom.sha1",
-                            "bundle.pom.md5",
-                            "bundle.jar",
-                            "bundle.jar.asc",
-                            "bundle.jar.sha1",
-                            "bundle.jar.md5");
+                            "dk/mada/action-maven-publish-test/0.0.0/bundle.pom",
+                            "dk/mada/action-maven-publish-test/0.0.0/bundle.pom.asc",
+                            "dk/mada/action-maven-publish-test/0.0.0/bundle.pom.sha1",
+                            "dk/mada/action-maven-publish-test/0.0.0/bundle.pom.md5",
+                            "dk/mada/action-maven-publish-test/0.0.0/bundle.jar",
+                            "dk/mada/action-maven-publish-test/0.0.0/bundle.jar.asc",
+                            "dk/mada/action-maven-publish-test/0.0.0/bundle.jar.sha1",
+                            "dk/mada/action-maven-publish-test/0.0.0/bundle.jar.md5");
         });
     }
 

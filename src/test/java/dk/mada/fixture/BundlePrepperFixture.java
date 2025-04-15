@@ -8,7 +8,7 @@ import java.nio.file.Paths;
 /**
  * Fixture for preparing a valid POM file and its checksums.
  */
-public class BundlePrepperFixture {
+public final class BundlePrepperFixture {
     /** Constructs new instance. */
     private BundlePrepperFixture() {
         // empty
