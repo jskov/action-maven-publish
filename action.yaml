@@ -1,6 +1,6 @@
 name: "action-maven-publish"
 author: "Jesper Skov (jskov@mada.dk)"
-description: "Publish maven artifacts to OSSRH (MavenCentral)"
+description: "Publish maven artifacts to Maven Central via Central Portal"
 
 inputs:
   search_directory:
@@ -20,13 +20,13 @@ inputs:
     required: true
     description: "The secret for the GPG signing key"
 
-  ossrh_username:
+  portal_username:
     required: true
-    description: "The OSSRH login name"
+    description: "The Portal login name"
 
-  ossrh_token:
+  portal_token:
     required: true
-    description: "The OSSRH token"
+    description: "The Portal token"
 
   target_action:
     description: "The action to take for bundles after upload"
@@ -80,8 +80,8 @@ runs:
         SIGNING_KEY: ${{ inputs.signing_key }}
         SIGNING_KEY_SECRET: ${{ inputs.signing_key_secret }}
         LOG_LEVEL: ${{ inputs.log_level }}
-        OSSRH_USERNAME: ${{ inputs.ossrh_username }}
-        OSSRH_TOKEN: ${{ inputs.ossrh_token }}
+        PORTAL_USERNAME: ${{ inputs.portal_username }}
+        PORTAL_TOKEN: ${{ inputs.portal_token }}
         TARGET_ACTION: ${{ inputs.target_action }}
         INITIAL_PAUSE: ${{ inputs.initial_pause }}
         LOOP_PAUSE: ${{ inputs.loop_pause }}

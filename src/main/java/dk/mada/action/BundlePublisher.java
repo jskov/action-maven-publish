@@ -27,7 +27,7 @@ public final class BundlePublisher {
      * Constructs a new instance.
      *
      * @param args  the action arguments
-     * @param proxy the proxy to use for OSSRH access
+     * @param proxy the proxy to use for Portal access
      */
     public BundlePublisher(ActionArguments args, PortalProxy proxy) {
         this.proxy = proxy;

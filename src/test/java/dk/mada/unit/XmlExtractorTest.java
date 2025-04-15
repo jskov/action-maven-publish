@@ -24,7 +24,7 @@ class XmlExtractorTest {
 				  <artifactId>action-maven-publish-test</artifactId>
 				  <version>0.0.0</version>
 				  <packaging>pom</packaging>
-				  <name>Used for testing OSSRH publishing</name>
+				  <name>Used for testing Portal publishing</name>
 				  <description>A dummy file.</description>
 				  <url>https://github.com/jskov/action-maven-publish</url>
 				  <licenses>

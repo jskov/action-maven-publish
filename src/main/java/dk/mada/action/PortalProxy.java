@@ -1,6 +1,6 @@
 package dk.mada.action;
 
-import dk.mada.action.ActionArguments.OssrhCredentials;
+import dk.mada.action.ActionArguments.PortalCredentials;
 import dk.mada.action.BundleCollector.Bundle;
 import dk.mada.action.BundlePublisher.BundleRepositoryState;
 import dk.mada.action.util.EphemeralCookieHandler;
@@ -24,7 +24,7 @@ import java.util.logging.Logger;
 /**
  * A proxy for Maven Central <a href="https://central.sonatype.org/publish/publish-portal-api/">Repository Portal Publisher API</a> web service.
  */
-public class PortalProxy {
+public final class PortalProxy {
     private static Logger logger = Logger.getLogger(PortalProxy.class.getName());
 
     /** The base URL for the Publisher Api. */
@@ -95,10 +95,22 @@ public class PortalProxy {
      */
     public record RepositoryStateInfo(DeploymentState state, String info) {
 
+    	/**
+    	 * Constructs an empty placeholder state (PENDING).
+    	 *
+    	 * @param info the information to include
+    	 * @return an empty placeholder state
+    	 */
         public static RepositoryStateInfo empty(String info) {
             return new RepositoryStateInfo(DeploymentState.PENDING, info);
         }
 
+        /**
+         * Constructs a failed placeholder state (FAILED)
+         *
+    	 * @param info the information to include
+    	 * @return a failed placeholder state
+         */
         public static RepositoryStateInfo failed(String info) {
             return new RepositoryStateInfo(DeploymentState.FAILED, info);
         }
@@ -109,7 +121,7 @@ public class PortalProxy {
      *
      * @param credentials the Portal credentials
      */
-    public PortalProxy(OssrhCredentials credentials) {
+    public PortalProxy(PortalCredentials credentials) {
         uploadTimeout = Duration.ofSeconds(DEFAULT_UPLOAD_TIMEOUT_SECONDS);
         shortCallTimeout = Duration.ofSeconds(DEFAULT_SHORT_CALL_TIMEOUT_SECONDS);
         authorizationHeader = new String[] {"Authorization", credentials.asAuthenticationValue()};
@@ -122,6 +134,12 @@ public class PortalProxy {
                 .build();
     }
 
+    /**
+     * Get the repository deployment state,
+     *
+     * @param deploymentId the deployment id to query
+     * @return the repository state
+     */
     public RepositoryStateInfo getDeploymentStatus(String deploymentId) {
         HttpResponse<String> response = get(STATUS_RESOURCE_PATH + "?id=" + deploymentId);
         int status = response.statusCode();

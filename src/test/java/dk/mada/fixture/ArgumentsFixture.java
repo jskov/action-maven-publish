@@ -2,7 +2,7 @@ package dk.mada.fixture;
 
 import dk.mada.action.ActionArguments;
 import dk.mada.action.ActionArguments.GpgCertificate;
-import dk.mada.action.ActionArguments.OssrhCredentials;
+import dk.mada.action.ActionArguments.PortalCredentials;
 import dk.mada.action.BundlePublisher.TargetAction;
 import dk.mada.action.util.LoggerConfig;
 import java.io.IOException;
@@ -32,7 +32,7 @@ public final class ArgumentsFixture {
     public static ActionArguments withGpg() {
         LoggerConfig.loadConfig("/test-logging.properties");
 
-        OssrhCredentials ossrhCreds = ossrhCreds();
+        PortalCredentials portalCreds = portalCreds();
         Path tmpDir = Paths.get(System.getProperty("java.io.tmpdir"));
         List<String> emptySuffixes = List.of();
         return new ActionArguments(
@@ -40,7 +40,7 @@ public final class ArgumentsFixture {
                 tmpDir,
                 emptySuffixes,
                 Level.FINEST,
-                ossrhCreds,
+                portalCreds,
                 TargetAction.DROP,
                 INITIAL_DELAY,
                 LOOP_DELAY);
@@ -54,21 +54,21 @@ public final class ArgumentsFixture {
     /**
      * Reads Portal user:token from PORTAL_CREDENTIALS_PATH if the file is available.
      *
-     * @return the loaded OSSRH credentials or dummy credentials
+     * @return the loaded Portal credentials or dummy credentials
      */
-    public static OssrhCredentials ossrhCreds() {
+    public static PortalCredentials portalCreds() {
         try {
             String credendialsPath = System.getenv("PORTAL_CREDENTIALS_PATH");
             if (credendialsPath != null) {
                 Path credsFile = Paths.get(credendialsPath);
                 if (Files.isRegularFile(credsFile)) {
                     String creds = Files.readString(credsFile).trim();
-                    return new OssrhCredentials(creds.replaceFirst(":.*", ""), creds.replaceFirst("[^:]*:", ""));
+                    return new PortalCredentials(creds.replaceFirst(":.*", ""), creds.replaceFirst("[^:]*:", ""));
                 }
             }
-            return new OssrhCredentials("no_ossrh_user", "no_ossrh_token");
+            return new PortalCredentials("no_portal_user", "no_portal_token");
         } catch (IOException e) {
-            throw new UncheckedIOException("Failed to read OSSRH creds", e);
+            throw new UncheckedIOException("Failed to read Portal creds", e);
         }
     }
 
