@@ -48,40 +48,40 @@ public class JsonExtractor {
             // Now fi is the index of the field.
             // ....'fieldName'  :  'fieldValue'....
             //     ^
+            int i = fi + fieldName.length() + 2;
 
-            boolean valueStarted = false; // flag for value capture having started
-            char quote = 0; // the active quote character if any
-            boolean escaped = false; // flag for previous character being an escape
-            StringBuilder value = new StringBuilder();
-
-            // Starting a index i, look for the (quoted) value string that should follow.
+            // Starting at index i, look for the (quoted) value string that should follow.
             // ....'fieldName'  :  'fieldValue'....
             //                ^
-            for (int i = fi + fieldName.length() + 2; i < json.length(); i++) {
-                char c = json.charAt(i);
-                if (!valueStarted && (c == ':' || Character.isWhitespace(c))) {
-                    // Skip until value starts
-                    continue;
+            char c = 0;
+            for (; i < json.length(); i++) {
+                c = json.charAt(i);
+                if (c != ':' && !Character.isWhitespace(c)) {
+                    break;
                 }
+            }
 
-                if (!valueStarted) {
-                    // ....'fieldName'  :  'fieldValue'....
-                    //                     ^
+            // ....'fieldName'  :  'fieldValue'....
+            //                     ^
+            char quote; // the active quote character if any
+            // 1st character should be a start quote...
+            if ('\'' == c || '"' == c) {
+                quote = c;
+                i++;
+            } else if (c == 't' || c == 'f') {
+                // or true or false
+                quote = 0;
+            } else {
+                throw new IllegalStateException("Value of field " + fieldName + " is not quoted, and not true/false");
+            }
 
-                    // 1st character should be a start quote...
-                    valueStarted = true;
-                    if ('\'' == c || '"' == c) {
-                        quote = c;
-                        continue;
-                    }
-                    // or true or false
-                    if (c != 't' && c != 'f') {
-                        throw new IllegalStateException(
-                                "Value of field " + fieldName + " is not quoted, and not true/false");
-                    }
-                }
-
-                // Look for the end of the value now
+            // ....'fieldName'  :  'fieldValue'....
+            //                      ^
+            // Capture the value now, looking for its end
+            StringBuilder value = new StringBuilder();
+            boolean escaped = false; // flag for previous character being an escape
+            for (; i < json.length(); i++) {
+                c = json.charAt(i);
                 boolean noQuteEnd = quote == 0 && (',' == c || '}' == c || Character.isWhitespace(c));
                 boolean quoteEnd = quote == c && !escaped;
                 if (noQuteEnd || quoteEnd) {
