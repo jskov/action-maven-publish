@@ -1,6 +1,6 @@
 name: "action-maven-publish"
 author: "Jesper Skov (jskov@mada.dk)"
-description: "Publish maven artifacts to Maven Central via Central Portal"
+description: "Publish maven artifacts to Maven Central via Portal Publisher API"
 
 inputs:
   search_directory:

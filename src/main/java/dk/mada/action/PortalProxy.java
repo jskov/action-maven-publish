@@ -159,7 +159,7 @@ public final class PortalProxy {
         int status = response.statusCode();
         String body = response.body();
 
-        logger.info(() -> "Status response (" + status + "): " + body);
+        logger.fine(() -> "Status response (" + status + "): " + body);
 
         if (status != HttpURLConnection.HTTP_OK) {
             return new RepositoryStateInfo(
@@ -230,14 +230,14 @@ public final class PortalProxy {
                     .POST(body)
                     .build();
 
-            logger.info(() -> "Calling " + request.method() + " on " + request.uri());
+            logger.fine(() -> "Calling " + request.method() + " on " + request.uri());
 
             HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
 
             int status = response.statusCode();
             String responseBody = response.body();
 
-            logger.info(() -> "Response " + status + " msg " + responseBody);
+            logger.fine(() -> "Response " + status + " msg " + responseBody);
 
             if (status == HttpURLConnection.HTTP_CREATED) {
                 String repoId = responseBody;
@@ -307,7 +307,7 @@ public final class PortalProxy {
             }
             HttpRequest request = builder.GET().build();
 
-            logger.info(() -> "Calling " + request.method() + " on " + request.uri());
+            logger.fine(() -> "Calling " + request.method() + " on " + request.uri());
 
             return client.send(request, BodyHandlers.ofString());
         } catch (InterruptedException e) {
@@ -334,7 +334,7 @@ public final class PortalProxy {
                     .POST(BodyPublishers.noBody())
                     .build();
 
-            logger.info(() -> "Calling " + request.method() + " on " + request.uri());
+            logger.fine(() -> "Calling " + request.method() + " on " + request.uri());
 
             return client.send(request, BodyHandlers.ofString());
         } catch (InterruptedException e) {
@@ -361,7 +361,7 @@ public final class PortalProxy {
                     .DELETE()
                     .build();
 
-            logger.info(() -> "Calling " + request.method() + " on " + request.uri());
+            logger.fine(() -> "Calling " + request.method() + " on " + request.uri());
 
             return client.send(request, BodyHandlers.ofString());
         } catch (InterruptedException e) {

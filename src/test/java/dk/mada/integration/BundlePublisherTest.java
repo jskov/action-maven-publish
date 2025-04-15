@@ -34,7 +34,7 @@ public class BundlePublisherTest {
     private static Logger logger = Logger.getLogger(BundlePublisherTest.class.getName());
 
     /** Temporary directory to use for the test data. */
-    @TempDir(cleanup = CleanupMode.NEVER)
+    @TempDir(cleanup = CleanupMode.ALWAYS)
     private Path workDir;
 
     /**
