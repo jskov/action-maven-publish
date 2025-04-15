@@ -2,12 +2,12 @@ package dk.mada.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dk.mada.action.ActionArguments.TargetAction;
 import dk.mada.action.BundleCollector;
 import dk.mada.action.BundleCollector.Bundle;
 import dk.mada.action.BundlePublisher;
 import dk.mada.action.BundlePublisher.ExecutedAction;
 import dk.mada.action.BundlePublisher.PublishingResult;
-import dk.mada.action.BundlePublisher.TargetAction;
 import dk.mada.fixture.TestInstances;
 import java.io.IOException;
 import java.nio.file.Files;
