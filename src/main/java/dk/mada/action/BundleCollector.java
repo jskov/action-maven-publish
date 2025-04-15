@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.jar.JarEntry;
@@ -120,13 +121,13 @@ public final class BundleCollector {
         allBundleFiles.addAll(bundleFiles.signatures());
         allBundleFiles.addAll(checksumFiles);
 
-        String jarDirPath = pom.group().replace('.', '/') + "/" + pom.artifact() + "/" + pom.version() + "/";
+        Path jarDirPath = Paths.get(pom.group().replace('.', '/'), pom.artifact(), pom.version());
 
         try (OutputStream os = Files.newOutputStream(bundleJar);
                 BufferedOutputStream bos = new BufferedOutputStream(os);
                 JarOutputStream jos = new JarOutputStream(bos)) {
             for (Path f : allBundleFiles) {
-                String jarPath = jarDirPath + f.getFileName().toString();
+                String jarPath = jarDirPath.resolve(f.getFileName()).toString();
                 JarEntry entry = new JarEntry(jarPath);
                 jos.putNextEntry(entry);
                 Files.copy(f, jos);
