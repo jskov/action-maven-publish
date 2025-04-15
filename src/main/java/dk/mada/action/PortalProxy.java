@@ -1,5 +1,10 @@
 package dk.mada.action;
 
+import dk.mada.action.ActionArguments.OssrhCredentials;
+import dk.mada.action.BundleCollector.Bundle;
+import dk.mada.action.BundlePublisher.BundleRepositoryState;
+import dk.mada.action.util.EphemeralCookieHandler;
+import dk.mada.action.util.JsonExtractor;
 import java.io.IOException;
 import java.net.CookieHandler;
 import java.net.HttpURLConnection;
@@ -15,12 +20,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.logging.Logger;
-
-import dk.mada.action.ActionArguments.OssrhCredentials;
-import dk.mada.action.BundleCollector.Bundle;
-import dk.mada.action.BundlePublisher.BundleRepositoryState;
-import dk.mada.action.util.EphemeralCookieHandler;
-import dk.mada.action.util.JsonExtractor;
 
 /**
  * A proxy for Maven Central <a href="https://central.sonatype.org/publish/publish-portal-api/">Repository Portal Publisher API</a> web service.
@@ -128,6 +127,8 @@ public class PortalProxy {
         int status = response.statusCode();
         String body = response.body();
 
+        logger.info(() -> "Status response (" + status + "): " + body);
+
         if (status != HttpURLConnection.HTTP_OK) {
             return new RepositoryStateInfo(
                     DeploymentState.FAILED, "Failed repository probe; status: " + status + ", message: " + body);
@@ -184,7 +185,6 @@ public class PortalProxy {
                     BodyPublishers.ofFile(file),
                     BodyPublishers.ofString(formOutro));
 
-            
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(PUBLISHER_API_BASE_URL + UPLOAD_RESOURCE_PATH))
                     .timeout(uploadTimeout)
@@ -255,8 +255,9 @@ public class PortalProxy {
      */
     private HttpResponse<String> doGet(String path, String... headers) {
         try {
+            URI uri = URI.create(PUBLISHER_API_BASE_URL + path);
             HttpRequest.Builder builder = HttpRequest.newBuilder()
-                    .uri(URI.create(PUBLISHER_API_BASE_URL + path))
+                    .uri(uri)
                     .timeout(Duration.ofSeconds(DOWNLOAD_TIMEOUT_SECONDS))
                     .headers(USER_AGENT)
                     .headers(authorizationHeader);
@@ -264,6 +265,9 @@ public class PortalProxy {
                 builder.headers(headers);
             }
             HttpRequest request = builder.GET().build();
+
+            logger.info(() -> "Calling " + request.method() + " on " + request.uri());
+
             return client.send(request, BodyHandlers.ofString());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -288,6 +292,9 @@ public class PortalProxy {
                     .headers(authorizationHeader)
                     .POST(BodyPublishers.noBody())
                     .build();
+
+            logger.info(() -> "Calling " + request.method() + " on " + request.uri());
+
             return client.send(request, BodyHandlers.ofString());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -312,6 +319,9 @@ public class PortalProxy {
                     .headers(authorizationHeader)
                     .DELETE()
                     .build();
+
+            logger.info(() -> "Calling " + request.method() + " on " + request.uri());
+
             return client.send(request, BodyHandlers.ofString());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

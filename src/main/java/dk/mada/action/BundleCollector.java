@@ -1,5 +1,6 @@
 package dk.mada.action;
 
+import dk.mada.action.util.XmlExtractor;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -51,13 +52,14 @@ public final class BundleCollector {
     public List<BundleSource> findBundleSources(Path searchDir, List<String> companionSuffixes) {
         try (Stream<Path> files = Files.walk(searchDir)) {
             // First find the POMs
-            List<Path> poms = files.filter(Files::isRegularFile)
+            List<Pom> poms = files.filter(Files::isRegularFile)
                     .filter(p -> p.getFileName().toString().endsWith(".pom"))
+                    .map(this::readPomMetadata)
                     .toList();
 
             // Then make bundles with the companions
             return poms.stream()
-                    .map(p -> makeSourceBundle(p, companionSuffixes))
+                    .map(pom -> makeSourceBundle(pom, companionSuffixes))
                     .toList();
         } catch (IOException e) {
             throw new IllegalStateException("Failed to build bundles in " + searchDir, e);
@@ -69,18 +71,19 @@ public final class BundleCollector {
      *
      * Finds companion files for the bundle based on the provided suffixes.
      *
-     * @param pomFile           the main POM file
+     * @param pom               the main POM file
      * @param companionSuffixes the suffixes to find companion assets from
      * @return the resulting bundle source
      */
-    private BundleSource makeSourceBundle(Path pomFile, List<String> companionSuffixes) {
+    private BundleSource makeSourceBundle(Pom pom, List<String> companionSuffixes) {
+        Path pomFile = pom.pomFile();
         Path dir = pomFile.getParent();
         String basename = pomFile.getFileName().toString().replace(".pom", "");
         List<Path> companions = companionSuffixes.stream()
                 .map(suffix -> dir.resolve(basename + suffix))
                 .filter(Files::isRegularFile)
                 .toList();
-        return new BundleSource(pomFile, companions);
+        return new BundleSource(pom, companions);
     }
 
     /**
@@ -90,7 +93,7 @@ public final class BundleCollector {
      * @return all files to be included in the bundle (source + signatures)
      */
     private BundleFiles signBundleFiles(BundleSource bundleSrc) {
-        List<Path> signatures = Stream.concat(Stream.of(bundleSrc.pom()), bundleSrc.assets().stream())
+        List<Path> signatures = Stream.concat(Stream.of(bundleSrc.pom().pomFile()), bundleSrc.assets().stream())
                 .map(signer::sign)
                 .toList();
         return new BundleFiles(bundleSrc, signatures);
@@ -103,13 +106,17 @@ public final class BundleCollector {
      * @return the completed bundle
      */
     private Bundle packageBundle(BundleFiles bundleFiles) {
-        Path pom = bundleFiles.bundleSource.pom();
+        Path pom = bundleFiles.bundleSource.pom().pomFile();
         Path bundleJar = pom.getParent().resolve(pom.getFileName().toString().replace(".pom", "_bundle.jar"));
 
         List<Path> allBundleFiles = new ArrayList<>();
         allBundleFiles.add(pom);
         allBundleFiles.addAll(bundleFiles.bundleSource().assets());
+
+        List<Path> checksumFiles = verifyAssociatedChecksumFiles(allBundleFiles);
+
         allBundleFiles.addAll(bundleFiles.signatures());
+        allBundleFiles.addAll(checksumFiles);
 
         try (OutputStream os = Files.newOutputStream(bundleJar);
                 BufferedOutputStream bos = new BufferedOutputStream(os);
@@ -125,6 +132,39 @@ public final class BundleCollector {
         }
 
         return new Bundle(bundleJar, bundleFiles);
+    }
+
+    private List<Path> verifyAssociatedChecksumFiles(List<Path> assets) {
+        List<Path> checksumFiles = new ArrayList<>();
+        for (Path f : assets) {
+            String name = f.getFileName().toString();
+            checksumFiles.add(f.getParent().resolve(name + ".md5"));
+            checksumFiles.add(f.getParent().resolve(name + ".sha1"));
+        }
+
+        List<Path> missingChecksumFiles =
+                checksumFiles.stream().filter(f -> !Files.isRegularFile(f)).toList();
+        if (!missingChecksumFiles.isEmpty()) {
+            throw new IllegalStateException("Did not find required checksum files: " + missingChecksumFiles);
+        }
+
+        return checksumFiles;
+    }
+
+    public record Pom(Path pomFile, String group, String artifact, String version) {}
+
+    private Pom readPomMetadata(Path pomFile) {
+        try {
+            String pomXml = Files.readString(pomFile);
+            XmlExtractor extractor = new XmlExtractor(pomXml);
+            String group = extractor.get("groupId");
+            String artifact = extractor.get("artifactId");
+            String version = extractor.get("version");
+
+            return new Pom(pomFile, group, artifact, version);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to read POM data from " + pomFile, e);
+        }
     }
 
     /**
@@ -146,8 +186,8 @@ public final class BundleCollector {
     /**
      * The original source files of a bundle.
      *
-     * @param pom    the main POM file
+     * @param pom    the main POM
      * @param assets a list of additional assets (may be empty)
      */
-    public record BundleSource(Path pom, List<Path> assets) {}
+    public record BundleSource(Pom pom, List<Path> assets) {}
 }
