@@ -2,9 +2,9 @@ package dk.mada.action;
 
 import dk.mada.action.ActionArguments.TargetAction;
 import dk.mada.action.BundleCollector.Bundle;
-import dk.mada.action.util.XmlExtractor;
-import java.net.HttpURLConnection;
-import java.net.http.HttpResponse;
+import dk.mada.action.portal.DeploymentState;
+import dk.mada.action.portal.PortalProxy;
+import dk.mada.action.portal.RepositoryStateInfo;
 import java.time.Duration;
 import java.util.List;
 import java.util.logging.Logger;
@@ -18,12 +18,7 @@ import java.util.stream.Collectors;
 public final class BundlePublisher {
     private static Logger logger = Logger.getLogger(BundlePublisher.class.getName());
 
-    /** The expected prefix in response when creating new repository. */
-    private static final String RESPONSE_REPO_URI_PREFIX =
-            "{\"repositoryUris\":[\"https://s01.oss.sonatype.org/content/repositories/";
-    /** Dummy id for unassigned repository. */
-    private static final String REPO_ID_UNASSIGNED = "_unassigned_";
-    /** The OSSRH proxy. */
+    /** The Portal proxy. */
     private final PortalProxy proxy;
     /** The initial timeout to use for each bundle. */
     private final Duration initialProcessingPause;
@@ -34,7 +29,7 @@ public final class BundlePublisher {
      * Constructs a new instance.
      *
      * @param args  the action arguments
-     * @param proxy the proxy to use for OSSRH access
+     * @param proxy the proxy to use for Portal access
      */
     public BundlePublisher(ActionArguments args, PortalProxy proxy) {
         this.proxy = proxy;
@@ -53,7 +48,7 @@ public final class BundlePublisher {
      */
     public PublishingResult publish(List<Bundle> bundles, TargetAction action) {
         List<BundleRepositoryState> initialBundleStates =
-                bundles.stream().map(this::uploadBundle).toList();
+                bundles.stream().map(proxy::uploadBundle).toList();
 
         logger.info(() -> "Uploaded bundles:\n" + makeSummary(initialBundleStates));
 
@@ -63,18 +58,18 @@ public final class BundlePublisher {
         logger.info(() -> "Processed bundles:\n" + makeSummary(finalBundleStates));
 
         List<String> repoIds =
-                finalBundleStates.stream().map(brs -> brs.assignedId).toList();
+                finalBundleStates.stream().map(brs -> brs.assignedId()).toList();
 
-        boolean allSucceeded = finalBundleStates.stream().allMatch(brs -> brs.status() == Status.VALIDATED);
+        boolean allSucceeded = finalBundleStates.stream().allMatch(brs -> brs.status() == DeploymentState.VALIDATED);
 
         ExecutedAction executedAction;
         if (allSucceeded && action == TargetAction.PROMOTE_OR_KEEP) {
             logger.info("Promoting repositories...");
-            proxy.stagingAction("/service/local/staging/bulk/promote", repoIds);
+            proxy.publishRepositories(repoIds);
             executedAction = ExecutedAction.PROMOTED;
         } else if (action == TargetAction.DROP) {
             logger.info("Dropping repositories...");
-            proxy.stagingAction("/service/local/staging/bulk/drop", repoIds);
+            proxy.dropRepositories(repoIds);
             executedAction = ExecutedAction.DROPPED;
         } else {
             // TargetAction.KEEP *or* failure so promotion cannot happen
@@ -111,18 +106,29 @@ public final class BundlePublisher {
     public record PublishingResult(
             ExecutedAction executedAction, boolean allReposValid, List<BundleRepositoryState> finalStates) {}
 
-    // TODO: Should include maven repo paths (repositoryURI from status)
-    private String makeSummary(List<BundleRepositoryState> initialBundleStates) {
-        return " "
-                + initialBundleStates.stream()
-                        .map(bs -> bs.bundle().bundleJar().getFileName() + " repo:" + bs.assignedId() + ", status: "
-                                + bs.status)
-                        .collect(Collectors.joining("\n "));
+    /**
+     * Makes a summary of the bundles being published.
+     *
+     * @param bundleStates the bundles to make a summary of
+     * @return the summary text for all bundles
+     */
+    private String makeSummary(List<BundleRepositoryState> bundleStates) {
+        return " " + bundleStates.stream().map(this::summaryRepo).collect(Collectors.joining("\n "));
     }
 
-    private BundleRepositoryState uploadBundle(Bundle bundle) {
-        HttpResponse<String> response = proxy.uploadBundle(bundle);
-        return extractRepoId(bundle, response);
+    /**
+     * Makes a summary of the bundle repository.
+     *
+     * @param bs the bundle
+     * @return the summary text
+     */
+    private String summaryRepo(BundleRepositoryState bs) {
+        String summary =
+                bs.bundle().bundleJar().getFileName() + " repo:" + bs.assignedId() + ", status: " + bs.status();
+        if (bs.status() == DeploymentState.FAILED) {
+            summary += " [" + bs.latestStateInfo().info() + "]";
+        }
+        return summary;
     }
 
     private List<BundleRepositoryState> waitForRepositoriesToSettle(List<BundleRepositoryState> bundleStates) {
@@ -138,9 +144,8 @@ public final class BundlePublisher {
 
             // Pause period for next loop depending on how
             // many bundles are actively being processed
-            long bundlesInTransition = updatedStates.stream()
-                    .filter(rs -> rs.status().isTransitioning())
-                    .count();
+            long bundlesInTransition =
+                    updatedStates.stream().filter(rs -> rs.isTransitioning()).count();
             delay = loopPause.multipliedBy(bundlesInTransition);
             logger.info(() -> " (" + bundlesInTransition + " bundles still processing)");
 
@@ -151,94 +156,14 @@ public final class BundlePublisher {
     }
 
     private BundleRepositoryState updateRepoState(BundleRepositoryState currentState) {
-        if (!currentState.status.isTransitioning()) {
+        if (!currentState.isTransitioning()) {
             return currentState;
         }
 
-        String repoId = currentState.assignedId;
-        HttpResponse<String> response = proxy.get("/service/local/staging/repository/" + repoId);
-        RepositoryStateInfo repoState = parseRepositoryState(response);
+        String deploymentId = currentState.assignedId();
+        RepositoryStateInfo repoState = proxy.getDeploymentStatus(deploymentId);
 
-        Status newStatus;
-        if (repoState.transitioning) {
-            newStatus = currentState.status();
-        } else {
-            if (repoState.notifications == 0) {
-                newStatus = Status.VALIDATED;
-            } else {
-                newStatus = Status.FAILED_VALIDATION;
-            }
-        }
-        return new BundleRepositoryState(currentState.bundle(), newStatus, currentState.assignedId(), repoState);
-    }
-
-    private record RepositoryStateInfo(int notifications, boolean transitioning, String info) {}
-
-    private RepositoryStateInfo parseRepositoryState(HttpResponse<String> response) {
-        int status = response.statusCode();
-        String body = response.body();
-        if (status != HttpURLConnection.HTTP_OK) {
-            return new RepositoryStateInfo(
-                    -1, false, "Failed repository probe; status: " + status + ", message: " + body);
-        }
-        XmlExtractor xe = new XmlExtractor(body);
-        return new RepositoryStateInfo(xe.getInt("notifications"), xe.getBool("transitioning"), body);
-    }
-
-    /**
-     * OSSRH repository states.
-     */
-    public enum Status {
-        /** The upload failed. Terminal state. */
-        FAILED_UPLOAD,
-        /** The bundle was uploaded. Should transition to FAILED_VALIDATION or VALIDATED. */
-        UPLOADED,
-        /** The validation failed. Terminal state. */
-        FAILED_VALIDATION,
-        /** The validation succeeded. Terminal state. */
-        VALIDATED;
-
-        boolean isTransitioning() {
-            return this == UPLOADED;
-        }
-    }
-
-    /**
-     * The bundle's repository state.
-     *
-     * @param bundle          the bundle
-     * @param status          the current repository status
-     * @param assignedId      the assigned repository id
-     * @param latestStateInfo the latest returned state information (note, may be from emptyStateInfo())
-     */
-    public record BundleRepositoryState(
-            Bundle bundle, Status status, String assignedId, RepositoryStateInfo latestStateInfo) {}
-
-    /**
-     * Crudely extracts the assigned repository id from returned JSON.
-     *
-     * @param bundle   the bundle that was uploaded
-     * @param response the HTTP response from OSRRH
-     * @return the resulting bundle repository state
-     */
-    private BundleRepositoryState extractRepoId(Bundle bundle, HttpResponse<String> response) {
-        int status = response.statusCode();
-        String body = response.body();
-
-        if (status == HttpURLConnection.HTTP_CREATED && body.startsWith(RESPONSE_REPO_URI_PREFIX)) {
-            String repoId = body.substring(RESPONSE_REPO_URI_PREFIX.length()).replace("\"]}", "");
-            return new BundleRepositoryState(bundle, Status.UPLOADED, repoId, emptyStateInfo("Assigned id: " + repoId));
-        } else {
-            return new BundleRepositoryState(
-                    bundle,
-                    Status.FAILED_UPLOAD,
-                    REPO_ID_UNASSIGNED,
-                    emptyStateInfo("Upload status: " + status + ", message: " + body));
-        }
-    }
-
-    private RepositoryStateInfo emptyStateInfo(String info) {
-        return new RepositoryStateInfo(-1, false, info);
+        return new BundleRepositoryState(currentState.bundle(), currentState.assignedId(), repoState);
     }
 
     /**

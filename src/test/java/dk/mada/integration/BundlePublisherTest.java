@@ -8,14 +8,16 @@ import dk.mada.action.BundleCollector.Bundle;
 import dk.mada.action.BundlePublisher;
 import dk.mada.action.BundlePublisher.ExecutedAction;
 import dk.mada.action.BundlePublisher.PublishingResult;
+import dk.mada.action.util.LoggerConfig;
+import dk.mada.fixture.BundlePrepperFixture;
 import dk.mada.fixture.TestInstances;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
+import java.util.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.io.CleanupMode;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
@@ -30,8 +32,10 @@ import org.junit.jupiter.api.io.TempDir;
         matches = ".*",
         disabledReason = "Only runs when provided with credentials")
 public class BundlePublisherTest {
+    private static Logger logger = Logger.getLogger(BundlePublisherTest.class.getName());
+
     /** Temporary directory to use for the test data. */
-    @TempDir
+    @TempDir(cleanup = CleanupMode.ALWAYS)
     private Path workDir;
 
     /**
@@ -39,15 +43,25 @@ public class BundlePublisherTest {
      */
     @Test
     void canPublishAndDrop() throws IOException {
+        LoggerConfig.loadConfig("/test-logging.properties");
+        logger.info("Bundle built in " + workDir);
+
         String pomName = "action-maven-publish-test-0.0.0.pom";
-        Files.copy(Paths.get("src/test/data").resolve(pomName), workDir.resolve(pomName));
+        BundlePrepperFixture.addTestPomFiles(workDir, pomName);
 
         BundleCollector bundleCollector = TestInstances.bundleCollector();
         List<Bundle> bundles = bundleCollector.collectBundles(workDir, List.of());
 
         BundlePublisher sut = TestInstances.bundlePublisher();
 
-        PublishingResult result = sut.publish(bundles, TargetAction.DROP);
+        PublishingResult result = sut.publish(bundles, TargetAction.KEEP);
+
+        // The publish operation will now always results in failure since the artifacts
+        // are expected to be signed by a known certificate (and they are not).
+        //
+        // At present (2025.04.15) the status request replies 500 so this test cannot
+        // be changed to verify the one expected failure.
+        // Nor does it manage to actually drop the repository.
 
         assertThat(result.finalStates()).isNotEmpty();
         assertThat(result.allReposValid()).isFalse();

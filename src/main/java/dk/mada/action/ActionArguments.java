@@ -100,12 +100,6 @@ public record ActionArguments(
                     + Base64.getEncoder().encodeToString((user() + ":" + token()).getBytes(StandardCharsets.UTF_8));
         }
 
-        /** {@return the credentials for use in a Basic Authentication header} */
-        public String asBasicAuth() {
-            return "Basic "
-                    + Base64.getEncoder().encodeToString((user() + ":" + token()).getBytes(StandardCharsets.UTF_8));
-        }
-
         @Override
         public final String toString() {
             // Note: no secrets
