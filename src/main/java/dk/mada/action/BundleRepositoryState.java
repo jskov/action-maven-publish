@@ -1,8 +1,8 @@
 package dk.mada.action;
 
 import dk.mada.action.BundleCollector.Bundle;
-import dk.mada.action.PortalProxy.DeploymentState;
-import dk.mada.action.PortalProxy.RepositoryStateInfo;
+import dk.mada.action.portal.DeploymentState;
+import dk.mada.action.portal.RepositoryStateInfo;
 
 /**
  * The bundle's repository state.

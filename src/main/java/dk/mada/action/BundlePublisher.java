@@ -2,8 +2,9 @@ package dk.mada.action;
 
 import dk.mada.action.ActionArguments.TargetAction;
 import dk.mada.action.BundleCollector.Bundle;
-import dk.mada.action.PortalProxy.DeploymentState;
-import dk.mada.action.PortalProxy.RepositoryStateInfo;
+import dk.mada.action.portal.DeploymentState;
+import dk.mada.action.portal.PortalProxy;
+import dk.mada.action.portal.RepositoryStateInfo;
 import java.time.Duration;
 import java.util.List;
 import java.util.logging.Logger;

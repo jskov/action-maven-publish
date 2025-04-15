@@ -1,11 +1,10 @@
-package dk.mada.action;
+package dk.mada.action.portal;
 
 import dk.mada.action.ActionArguments.PortalCredentials;
 import dk.mada.action.BundleCollector.Bundle;
-import dk.mada.action.util.EphemeralCookieHandler;
+import dk.mada.action.BundleRepositoryState;
 import dk.mada.action.util.JsonExtractor;
 import java.io.IOException;
-import java.net.CookieHandler;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -62,77 +61,6 @@ public final class PortalProxy {
     private final String[] authorizationHeader;
 
     /**
-     * The deployment status from the Publisher API
-     */
-    public enum DeploymentState {
-        /**
-         * A deployment is uploaded and waiting for processing by the validation
-         * service.
-         */
-        PENDING(true),
-        /** A deployment is being processed by the validation service. */
-        VALIDATING(true),
-        /**
-         * A deployment has passed validation and is waiting on a user to manually
-         * publish via the Central Portal UI.
-         */
-        VALIDATED(false),
-        /**
-         * A deployment has been either automatically or manually published and is being
-         * uploaded to Maven Central.
-         */
-        PUBLISHING(true),
-        /** A deployment has successfully been uploaded to Maven Central. */
-        PUBLISHED(false),
-        /**
-         * A deployment has encountered an error (additional context will be present in
-         * an errors field).
-         */
-        FAILED(false);
-
-        /** Flag for deployment process still transitioning. */
-        private boolean transitioning;
-
-        DeploymentState(boolean transitioning) {
-            this.transitioning = transitioning;
-        }
-
-        /** {@return true if the deployment process is still transitioning} */
-        public boolean isTransitioning() {
-            return transitioning;
-        }
-    }
-
-    /**
-     * The current repository state.
-     *
-     * @param state the current deployment state
-     * @param info  any additional information
-     */
-    public record RepositoryStateInfo(DeploymentState state, String info) {
-
-        /**
-         * Constructs an empty placeholder state (PENDING).
-         *
-         * @param info the information to include
-         * @return an empty placeholder state
-         */
-        public static RepositoryStateInfo empty(String info) {
-            return new RepositoryStateInfo(DeploymentState.PENDING, info);
-        }
-
-        /**
-         * Constructs a failed placeholder state (FAILED)
-         *
-         * @param info the information to include
-         * @return a failed placeholder state
-         */
-        public static RepositoryStateInfo failed(String info) {
-            return new RepositoryStateInfo(DeploymentState.FAILED, info);
-        }
-    }
-
-    /**
      * Constructs new instance.
      *
      * @param credentials the Portal credentials
@@ -142,11 +70,9 @@ public final class PortalProxy {
         shortCallTimeout = Duration.ofSeconds(DEFAULT_SHORT_CALL_TIMEOUT_SECONDS);
         authorizationHeader = new String[] {"Authorization", credentials.asAuthenticationValue()};
 
-        CookieHandler cookieHandler = EphemeralCookieHandler.newAcceptAll();
         client = HttpClient.newBuilder()
                 .followRedirects(Redirect.NORMAL)
                 .connectTimeout(Duration.ofSeconds(CONNECTION_TIMEOUT_SECONDS))
-                .cookieHandler(cookieHandler)
                 .build();
     }
 
