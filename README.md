@@ -42,7 +42,7 @@ Well, you should not!
 You would do well to fork this repository and review the code. And then use the Action from your forked repository!
 Basically the [official](https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-third-party-actions) recommendations but with extra paranoia :)
 
-According to [SonarCloud](https://sonarcloud.io/project/overview?id=jskov_action-maven-publish) there are <900 lines of java code.
+According to [SonarCloud](https://sonarcloud.io/component_measures?metric=lines_to_cover&selected=jskov_action-maven-publish%3Asrc%2Fmain%2Fjava%2Fdk%2Fmada%2Faction&id=jskov_action-maven-publish) there are <700 lines of java code.
 
 If you have written enough code to publish anything on MavenCentral, it should be a piece of cake to review.
 
