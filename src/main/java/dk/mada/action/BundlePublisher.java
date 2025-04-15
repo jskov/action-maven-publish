@@ -116,11 +116,22 @@ public final class BundlePublisher {
     public record PublishingResult(
             ExecutedAction executedAction, boolean allReposValid, List<BundleRepositoryState> finalStates) {}
 
-    // TODO: Should include maven repo paths (repositoryURI from status)
-    private String makeSummary(List<BundleRepositoryState> initialBundleStates) {
-        return " " + initialBundleStates.stream().map(this::summaryRepo).collect(Collectors.joining("\n "));
+    /**
+     * Makes a summary of the bundles being published.
+     *
+     * @param bundleStates the bundles to make a summary of
+     * @return the summary text for all bundles
+     */
+    private String makeSummary(List<BundleRepositoryState> bundleStates) {
+        return " " + bundleStates.stream().map(this::summaryRepo).collect(Collectors.joining("\n "));
     }
 
+    /**
+     * Makes a summary of the bundle repository.
+     *
+     * @param bs the bundle
+     * @return the summary text
+     */
     private String summaryRepo(BundleRepositoryState bs) {
         String summary =
                 bs.bundle().bundleJar().getFileName() + " repo:" + bs.assignedId() + ", status: " + bs.status();

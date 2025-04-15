@@ -52,9 +52,15 @@ public class BundlePublisherTest {
 
         BundlePublisher sut = TestInstances.bundlePublisher();
 
-        //        PublishingResult result = sut.publish(bundles, TargetAction.DROP);
-        PublishingResult result = sut.publish(bundles, TargetAction.KEEP);
+        PublishingResult result = sut.publish(bundles, TargetAction.DROP);
 
+        // The publish operation will now always results in failure since the artifacts
+        // are expected to be signed by a known certificate (and they are not).
+        //
+        // At present (2025.04.15) the status request replies 500 so this test cannot
+        // be changed to verify the one expected failure.
+        // Nor does it manage to actually drop the repository.
+        
         assertThat(result.finalStates()).isNotEmpty();
         assertThat(result.allReposValid()).isFalse();
         assertThat(result.executedAction()).isEqualTo(ExecutedAction.DROPPED);

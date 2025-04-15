@@ -115,7 +115,7 @@ public final class BundleCollector {
         allBundleFiles.add(pomFile);
         allBundleFiles.addAll(bundleFiles.bundleSource().assets());
 
-        List<Path> checksumFiles = verifyAssociatedChecksumFiles(allBundleFiles);
+        List<Path> checksumFiles = assertPresenceOfAssociatedChecksumFiles(allBundleFiles);
 
         allBundleFiles.addAll(bundleFiles.signatures());
         allBundleFiles.addAll(checksumFiles);
@@ -139,7 +139,14 @@ public final class BundleCollector {
         return new Bundle(bundleJar, bundleFiles);
     }
 
-    private List<Path> verifyAssociatedChecksumFiles(List<Path> assets) {
+    /**
+     * Make a list of expected checksum files for the assets, and assert that they
+     * are present.
+     *
+     * @param assets the list of assets
+     * @return the list of asset checksum files
+     */
+    private List<Path> assertPresenceOfAssociatedChecksumFiles(List<Path> assets) {
         List<Path> checksumFiles = new ArrayList<>();
         for (Path f : assets) {
             String name = f.getFileName().toString();
@@ -156,8 +163,12 @@ public final class BundleCollector {
         return checksumFiles;
     }
 
-    public record Pom(Path pomFile, String group, String artifact, String version) {}
-
+    /**
+     * Read metadata from the POM file.
+     *
+     * @param pomFile the pom file to read
+     * @return the read POM data
+     */
     private Pom readPomMetadata(Path pomFile) {
         try {
             String pomXml = Files.readString(pomFile);
@@ -171,6 +182,16 @@ public final class BundleCollector {
             throw new IllegalStateException("Failed to read POM data from " + pomFile, e);
         }
     }
+
+    /**
+     * Information about a POM.
+     *
+     * @param pomFile  the POM file
+     * @param group    the artifact group
+     * @param artifact the artifact name
+     * @param group    the artifact version
+     */
+    public record Pom(Path pomFile, String group, String artifact, String version) {}
 
     /**
      * The packaged bundle.
