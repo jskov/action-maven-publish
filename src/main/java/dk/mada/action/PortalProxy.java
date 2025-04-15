@@ -204,14 +204,9 @@ public final class PortalProxy {
             String mimeNewline = "\r\n";
             String formIntro = "" + "--" + boundaryMarker + mimeNewline
                     + "Content-Disposition: form-data; name=\"bundle\"; filename=\"" + file.getFileName() + "\""
-                    + mimeNewline + "Content-Type: " + "application/octet-stream" + mimeNewline + mimeNewline; // (empty
-            // line
-            // between
-            // form
-            // instructions
-            // and
-            // the
-            // data)
+                    + mimeNewline + "Content-Type: " + "application/octet-stream" + mimeNewline
+                    // (empty line between form instructions and the data)
+                    + mimeNewline;
 
             String formOutro = "" + mimeNewline // for the binary data
                     + "--" + boundaryMarker + "--" + mimeNewline;
