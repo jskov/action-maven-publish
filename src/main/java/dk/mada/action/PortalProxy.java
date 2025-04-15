@@ -386,7 +386,7 @@ public final class PortalProxy {
     /**
      * Logs a REST response.
      *
-     * @param
+     * @param response the response to log
      */
     private void logResponse(HttpResponse<String> response) {
         logger.fine(() -> "Response " + response.statusCode() + " body " + response.body());
