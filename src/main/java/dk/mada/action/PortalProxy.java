@@ -124,7 +124,7 @@ public class PortalProxy {
     }
 
     public RepositoryStateInfo getDeploymentStatus(String deploymentId) {
-        HttpResponse<String> response = get(STATUS_RESOURCE_PATH + "?" + deploymentId);
+        HttpResponse<String> response = get(STATUS_RESOURCE_PATH + "?id=" + deploymentId);
         int status = response.statusCode();
         String body = response.body();
 
