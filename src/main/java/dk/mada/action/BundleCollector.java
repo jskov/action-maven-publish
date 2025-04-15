@@ -106,11 +106,13 @@ public final class BundleCollector {
      * @return the completed bundle
      */
     private Bundle packageBundle(BundleFiles bundleFiles) {
-        Path pom = bundleFiles.bundleSource.pom().pomFile();
-        Path bundleJar = pom.getParent().resolve(pom.getFileName().toString().replace(".pom", "_bundle.jar"));
+        Pom pom = bundleFiles.bundleSource.pom();
+        Path pomFile = pom.pomFile();
+        Path bundleJar =
+                pomFile.getParent().resolve(pomFile.getFileName().toString().replace(".pom", "_bundle.jar"));
 
         List<Path> allBundleFiles = new ArrayList<>();
-        allBundleFiles.add(pom);
+        allBundleFiles.add(pomFile);
         allBundleFiles.addAll(bundleFiles.bundleSource().assets());
 
         List<Path> checksumFiles = verifyAssociatedChecksumFiles(allBundleFiles);
@@ -118,11 +120,14 @@ public final class BundleCollector {
         allBundleFiles.addAll(bundleFiles.signatures());
         allBundleFiles.addAll(checksumFiles);
 
+        String jarDirPath = pom.group().replace('.', '/') + "/" + pom.artifact() + "/" + pom.version() + "/";
+
         try (OutputStream os = Files.newOutputStream(bundleJar);
                 BufferedOutputStream bos = new BufferedOutputStream(os);
                 JarOutputStream jos = new JarOutputStream(bos)) {
             for (Path f : allBundleFiles) {
-                JarEntry entry = new JarEntry(f.getFileName().toString());
+                String jarPath = jarDirPath + f.getFileName().toString();
+                JarEntry entry = new JarEntry(jarPath);
                 jos.putNextEntry(entry);
                 Files.copy(f, jos);
                 jos.closeEntry();
@@ -156,10 +161,10 @@ public final class BundleCollector {
     private Pom readPomMetadata(Path pomFile) {
         try {
             String pomXml = Files.readString(pomFile);
-            XmlExtractor extractor = new XmlExtractor(pomXml);
-            String group = extractor.get("groupId");
-            String artifact = extractor.get("artifactId");
-            String version = extractor.get("version");
+            XmlExtractor xex = new XmlExtractor(pomXml);
+            String group = xex.get("groupId");
+            String artifact = xex.get("artifactId");
+            String version = xex.get("version");
 
             return new Pom(pomFile, group, artifact, version);
         } catch (IOException e) {

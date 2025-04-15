@@ -8,14 +8,15 @@ import dk.mada.action.BundlePublisher;
 import dk.mada.action.BundlePublisher.ExecutedAction;
 import dk.mada.action.BundlePublisher.PublishingResult;
 import dk.mada.action.BundlePublisher.TargetAction;
+import dk.mada.fixture.BundlePrepperFixture;
 import dk.mada.fixture.TestInstances;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
+import java.util.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.io.CleanupMode;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
@@ -30,8 +31,10 @@ import org.junit.jupiter.api.io.TempDir;
         matches = ".*",
         disabledReason = "Only runs when provided with credentials")
 public class BundlePublisherTest {
+    private static Logger logger = Logger.getLogger(BundlePublisherTest.class.getName());
+
     /** Temporary directory to use for the test data. */
-    @TempDir
+    @TempDir(cleanup = CleanupMode.NEVER)
     private Path workDir;
 
     /**
@@ -39,15 +42,18 @@ public class BundlePublisherTest {
      */
     @Test
     void canPublishAndDrop() throws IOException {
+        logger.info("Bundle built in " + workDir);
+
         String pomName = "action-maven-publish-test-0.0.0.pom";
-        Files.copy(Paths.get("src/test/data").resolve(pomName), workDir.resolve(pomName));
+        BundlePrepperFixture.addTestPomFiles(workDir, pomName);
 
         BundleCollector bundleCollector = TestInstances.bundleCollector();
         List<Bundle> bundles = bundleCollector.collectBundles(workDir, List.of());
 
         BundlePublisher sut = TestInstances.bundlePublisher();
 
-        PublishingResult result = sut.publish(bundles, TargetAction.DROP);
+        //        PublishingResult result = sut.publish(bundles, TargetAction.DROP);
+        PublishingResult result = sut.publish(bundles, TargetAction.KEEP);
 
         assertThat(result.finalStates()).isNotEmpty();
         assertThat(result.allReposValid()).isFalse();
