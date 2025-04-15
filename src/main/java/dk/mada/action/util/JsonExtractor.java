@@ -34,69 +34,81 @@ public class JsonExtractor {
      * @return the field value
      */
     public String get(String fieldName) {
-        try {
-            // First finds the first index of the desired (quoted) field name
-            // ....'fieldName'  :  'fieldValue'....
-            int fi = json.indexOf("'" + fieldName + "'");
-            if (fi == -1) {
-                fi = json.indexOf('"' + fieldName + '"');
-            }
-            if (fi == -1) {
-                throw new IllegalStateException("Found no field: " + fieldName + " in: " + json);
-            }
+        int i = findEndOfFieldName(fieldName);
 
-            // Now fi is the index of the field.
-            // ....'fieldName'  :  'fieldValue'....
-            //     ^
-            int i = fi + fieldName.length() + 2;
-
-            // Starting at index i, look for the (quoted) value string that should follow.
-            // ....'fieldName'  :  'fieldValue'....
-            //                ^
-            char c = 0;
-            for (; i < json.length(); i++) {
-                c = json.charAt(i);
-                if (c != ':' && !Character.isWhitespace(c)) {
-                    break;
-                }
-            }
-
-            // ....'fieldName'  :  'fieldValue'....
-            //                     ^
-            char quote; // the active quote character if any
-            // 1st character should be a start quote...
-            if ('\'' == c || '"' == c) {
-                quote = c;
-                i++;
-            } else if (c == 't' || c == 'f') {
-                // or true or false
-                quote = 0;
-            } else {
-                throw new IllegalStateException("Value of field " + fieldName + " is not quoted, and not true/false");
-            }
-
-            // ....'fieldName'  :  'fieldValue'....
-            //                      ^
-            // Capture the value now, looking for its end
-            StringBuilder value = new StringBuilder();
-            boolean escaped = false; // flag for previous character being an escape
-            for (; i < json.length(); i++) {
-                c = json.charAt(i);
-                boolean noQuteEnd = quote == 0 && (',' == c || '}' == c || Character.isWhitespace(c));
-                boolean quoteEnd = quote == c && !escaped;
-                if (noQuteEnd || quoteEnd) {
-                    break;
-                }
-
-                value.append(c);
-
-                // If current character is escape, prevents next quoteEnd from matching
-                escaped = c == '\\';
-            }
-
-            return value.toString();
-        } catch (IndexOutOfBoundsException e) {
-            throw new IllegalStateException("Failed to extract field: " + fieldName + " from: " + json, e);
+        // Starting at index i, look for the (quoted) value string that should follow.
+        // ....'fieldName'  :  'fieldValue'....
+        //                ^
+        i = findFieldValueStart(i);
+        
+        // ....'fieldName'  :  'fieldValue'....
+        //                     ^
+        char quote; // the active quote character if any
+        char c = json.charAt(i);
+        // 1st character should be a start quote...
+        if ('\'' == c || '"' == c) {
+            quote = c;
+            i++;
+        } else if (c == 't' || c == 'f') {
+            // or true or false
+            quote = 0;
+        } else {
+            throw new IllegalStateException("Value of field " + fieldName + " is not quoted, and not true/false");
         }
+
+        // ....'fieldName'  :  'fieldValue'....
+        //                      ^
+        // Capture the value now, looking for its end
+        StringBuilder value = new StringBuilder();
+        boolean escaped = false; // flag for previous character being an escape
+        for (; i < json.length(); i++) {
+            c = json.charAt(i);
+            boolean noQuteEnd = quote == 0 && (',' == c || '}' == c || Character.isWhitespace(c));
+            boolean quoteEnd = quote == c && !escaped;
+            if (noQuteEnd || quoteEnd) {
+                break;
+            }
+
+            value.append(c);
+
+            // If current character is escape, prevents next quoteEnd from matching
+            escaped = c == '\\';
+        }
+
+        return value.toString();
+    }
+
+    private int findEndOfFieldName(String fieldName) {
+        // First finds the first index of the desired (quoted) field name
+        // ....'fieldName'  :  'fieldValue'....
+        int i = json.indexOf("'" + fieldName + "'");
+        if (i == -1) {
+            i = json.indexOf('"' + fieldName + '"');
+        }
+        if (i == -1) {
+            throw new IllegalStateException("Found no field: " + fieldName + " in: " + json);
+        }
+
+        // Now i is the index of the field.
+        // ....'fieldName'  :  'fieldValue'....
+        //     ^
+        // Return the index after the last quote
+        // ....'fieldName'  :  'fieldValue'....
+        //                ^
+        return i + fieldName.length() + 2;
+    }
+
+    private int findFieldValueStart(int i) {
+        // Starting at the end of the fieldName, look for the (quoted) value string that should follow.
+        // ....'fieldName'  :  'fieldValue'....
+        //                ^
+        char c = 0;
+        for (; i < json.length(); i++) {
+            c = json.charAt(i);
+            if (c != ':' && !Character.isWhitespace(c)) {
+                break;
+            }
+        }
+        return i;
     }
 }
