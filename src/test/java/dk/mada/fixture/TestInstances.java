@@ -3,7 +3,7 @@ package dk.mada.fixture;
 import dk.mada.action.BundleCollector;
 import dk.mada.action.BundlePublisher;
 import dk.mada.action.GpgSigner;
-import dk.mada.action.OssrhProxy;
+import dk.mada.action.PortalProxy;
 
 /**
  * Provides test instances of the domain classes.
@@ -13,8 +13,8 @@ public final class TestInstances {
     private static GpgSigner signer;
     /** The bundle collector test instance. */
     private static BundleCollector bundleCollector;
-    /** The OSSRH proxy test instance. */
-    private static OssrhProxy ossrhProxy;
+    /** The Portal proxy test instance. */
+    private static PortalProxy portalProxy;
     /** The bundle publisher test instance. */
     private static BundlePublisher bundlePublisher;
 
@@ -39,18 +39,18 @@ public final class TestInstances {
         return bundleCollector;
     }
 
-    /** {@return an initialized ossrh proxy instance} */
-    public static OssrhProxy ossrhProxy() {
-        if (ossrhProxy == null) {
-            ossrhProxy = new OssrhProxy(ArgumentsFixture.ossrhCreds());
+    /** {@return an initialized Portal proxy instance} */
+    public static PortalProxy portalProxy() {
+        if (portalProxy == null) {
+            portalProxy = new PortalProxy(ArgumentsFixture.portalCreds());
         }
-        return ossrhProxy;
+        return portalProxy;
     }
 
     /** {@return an initialized bundle publisher instance} */
     public static BundlePublisher bundlePublisher() {
         if (bundlePublisher == null) {
-            bundlePublisher = new BundlePublisher(ArgumentsFixture.withGpg(), ossrhProxy());
+            bundlePublisher = new BundlePublisher(ArgumentsFixture.withGpg(), portalProxy());
         }
         return bundlePublisher;
     }

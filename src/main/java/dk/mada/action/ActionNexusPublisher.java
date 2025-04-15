@@ -8,14 +8,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Action uploading and publishing Maven artifacts to OSSRH (MavenCentral).
+ * Action uploading and publishing Maven artifacts to MavenCentral via Portal Central.
  */
 public final class ActionNexusPublisher {
     private static Logger logger = Logger.getLogger(ActionNexusPublisher.class.getName());
 
     /** Constructs new instance. */
     public ActionNexusPublisher() {
-        // Explicit constructor to avoid javadoc warning
+        // empty
     }
 
     /**
@@ -29,7 +29,7 @@ public final class ActionNexusPublisher {
         boolean failed;
         try (GpgSigner signer = new GpgSigner(args.gpgCertificate())) {
             BundleCollector bundleBuilder = new BundleCollector(signer);
-            OssrhProxy proxy = new OssrhProxy(args.ossrhCredentials());
+            PortalProxy proxy = new PortalProxy(args.portalCredentials());
             BundlePublisher bundlePublisher = new BundlePublisher(args, proxy);
             signer.loadSigningCertificate();
 

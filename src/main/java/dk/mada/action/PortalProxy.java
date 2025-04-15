@@ -1,6 +1,6 @@
 package dk.mada.action;
 
-import dk.mada.action.ActionArguments.OssrhCredentials;
+import dk.mada.action.ActionArguments.PortalCredentials;
 import dk.mada.action.BundleCollector.Bundle;
 import dk.mada.action.util.EphemeralCookieHandler;
 import java.io.IOException;
@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  *
  * Note: this will have to change when the new Central Portal publishing goes live.
  */
-public class OssrhProxy {
+public class PortalProxy {
     /** The base URL for OSSRH. */
     private static final String OSSRH_BASE_URL = "https://s01.oss.sonatype.org";
     /** The User Agent used by the proxy calls. */
@@ -41,7 +41,7 @@ public class OssrhProxy {
     /** Download timeout. */
     private static final int DOWNLOAD_TIMEOUT_SECONDS = 30;
     /** The credentials to use for login to OSSRH. */
-    private final OssrhCredentials credentials;
+    private final PortalCredentials credentials;
     /** The http client. */
     private final HttpClient client;
     /** Flag for successful authentication with OSSRH. */
@@ -56,7 +56,7 @@ public class OssrhProxy {
      *
      * @param credentials the OSSRH credentials
      */
-    public OssrhProxy(OssrhCredentials credentials) {
+    public PortalProxy(PortalCredentials credentials) {
         this.credentials = credentials;
 
         uploadTimeout = Duration.ofSeconds(DEFAULT_UPLOAD_TIMEOUT_SECONDS);

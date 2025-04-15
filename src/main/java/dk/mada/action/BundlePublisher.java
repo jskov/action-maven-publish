@@ -1,5 +1,6 @@
 package dk.mada.action;
 
+import dk.mada.action.ActionArguments.TargetAction;
 import dk.mada.action.BundleCollector.Bundle;
 import dk.mada.action.util.XmlExtractor;
 import java.net.HttpURLConnection;
@@ -23,7 +24,7 @@ public final class BundlePublisher {
     /** Dummy id for unassigned repository. */
     private static final String REPO_ID_UNASSIGNED = "_unassigned_";
     /** The OSSRH proxy. */
-    private final OssrhProxy proxy;
+    private final PortalProxy proxy;
     /** The initial timeout to use for each bundle. */
     private final Duration initialProcessingPause;
     /** The timeout to use in each loop after the initial delay. */
@@ -35,22 +36,10 @@ public final class BundlePublisher {
      * @param args  the action arguments
      * @param proxy the proxy to use for OSSRH access
      */
-    public BundlePublisher(ActionArguments args, OssrhProxy proxy) {
+    public BundlePublisher(ActionArguments args, PortalProxy proxy) {
         this.proxy = proxy;
         initialProcessingPause = Duration.ofSeconds(args.initialPauseSeconds());
         loopPause = Duration.ofSeconds(args.loopPauseSeconds());
-    }
-
-    /**
-     * The action to apply on the repositories when they have settled.
-     */
-    public enum TargetAction {
-        /** Drop (delete). */
-        DROP,
-        /** Keep repositories - you can use the listed URLs for testing. You must drop manually. */
-        KEEP,
-        /** Promote repositories if they all pass validation. Otherwise keep (so you can inspect and drop manually). */
-        PROMOTE_OR_KEEP
     }
 
     /**

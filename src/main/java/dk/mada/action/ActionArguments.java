@@ -1,6 +1,5 @@
 package dk.mada.action;
 
-import dk.mada.action.BundlePublisher.TargetAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,7 +18,7 @@ import java.util.stream.Stream;
  * @param searchDir           the directory to search for POM files
  * @param companionSuffixes   the companion suffixes to include when finding a POM file
  * @param logLevel            the logging level to use
- * @param ossrhCredentials    the OSSRH credentials
+ * @param portalCredentials   the Portal credentials
  * @param targetAction        the action to take after the bundles have been validated
  * @param initialPauseSeconds the pause (in seconds) to wait initially for each bundle
  * @param loopPauseSeconds    the pause (in seconds) to wait in each loop for each bundle still being processed
@@ -29,7 +28,7 @@ public record ActionArguments(
         Path searchDir,
         List<String> companionSuffixes,
         Level logLevel,
-        OssrhCredentials ossrhCredentials,
+        PortalCredentials portalCredentials,
         TargetAction targetAction,
         long initialPauseSeconds,
         long loopPauseSeconds) {
@@ -83,16 +82,22 @@ public record ActionArguments(
     }
 
     /**
-     * The OSSRH credentials to use for uploading bundles.
+     * The Portal credentials to use for uploading bundles.
      *
-     * @param user  the OSSRH user
-     * @param token the OSSRH user token
+     * @param user  the Portal user
+     * @param token the Portal user token
      */
-    public record OssrhCredentials(String user, String token) {
+    public record PortalCredentials(String user, String token) {
         /** Argument validation. */
-        public OssrhCredentials {
-            Objects.requireNonNull(user, "The OSSRH user must not be null");
-            Objects.requireNonNull(token, "The OSSRH token must not be null");
+        public PortalCredentials {
+            Objects.requireNonNull(user, "The Portal user must not be null");
+            Objects.requireNonNull(token, "The Portal token must not be null");
+        }
+
+        /** {@return the credentials value for use in an Authentication header} */
+        public String asAuthenticationValue() {
+            return "Bearer "
+                    + Base64.getEncoder().encodeToString((user() + ":" + token()).getBytes(StandardCharsets.UTF_8));
         }
 
         /** {@return the credentials for use in a Basic Authentication header} */
@@ -104,7 +109,7 @@ public record ActionArguments(
         @Override
         public final String toString() {
             // Note: no secrets
-            return "OssrhCredentials[user=***, token=***]";
+            return "PortalCredentials[user=***, token=***]";
         }
     }
 
@@ -116,8 +121,8 @@ public record ActionArguments(
     public static ActionArguments fromEnv() {
         GpgCertificate gpgCert =
                 new GpgCertificate(getRequiredEnv("SIGNING_KEY"), getRequiredEnv("SIGNING_KEY_SECRET"));
-        OssrhCredentials ossrhCreds =
-                new OssrhCredentials(getRequiredEnv("OSSRH_USERNAME"), getRequiredEnv("OSSRH_TOKEN"));
+        PortalCredentials portalCreds =
+                new PortalCredentials(getRequiredEnv("PORTAL_USERNAME"), getRequiredEnv("PORTAL_TOKEN"));
         String suffixesStr = getRequiredEnv("COMPANION_SUFFIXES");
         List<String> suffixes =
                 Stream.of(suffixesStr.split(",", -1)).map(String::trim).toList();
@@ -128,7 +133,7 @@ public record ActionArguments(
         TargetAction targetAction =
                 TargetAction.valueOf(getRequiredEnv("TARGET_ACTION").toUpperCase(Locale.ROOT));
         return new ActionArguments(
-                gpgCert, searchDir, suffixes, logLevel, ossrhCreds, targetAction, initialPause, loopPause);
+                gpgCert, searchDir, suffixes, logLevel, portalCreds, targetAction, initialPause, loopPause);
     }
 
     /**
@@ -143,5 +148,17 @@ public record ActionArguments(
                     + "' to be defined and non-blank. See readme/action.yaml!");
         }
         return value;
+    }
+
+    /**
+     * The action to apply on the repositories when they have settled.
+     */
+    public enum TargetAction {
+        /** Drop (delete). */
+        DROP,
+        /** Keep repositories - you can use the listed URLs for testing. You must drop manually. */
+        KEEP,
+        /** Promote repositories if they all pass validation. Otherwise keep (so you can inspect and drop manually). */
+        PROMOTE_OR_KEEP
     }
 }
