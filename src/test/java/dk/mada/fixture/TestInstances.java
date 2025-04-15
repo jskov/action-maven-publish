@@ -3,7 +3,7 @@ package dk.mada.fixture;
 import dk.mada.action.BundleCollector;
 import dk.mada.action.BundlePublisher;
 import dk.mada.action.GpgSigner;
-import dk.mada.action.PortalProxy;
+import dk.mada.action.portal.PortalProxy;
 
 /**
  * Provides test instances of the domain classes.

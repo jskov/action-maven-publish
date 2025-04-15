@@ -2,6 +2,7 @@ package dk.mada.action;
 
 import dk.mada.action.BundleCollector.Bundle;
 import dk.mada.action.BundlePublisher.PublishingResult;
+import dk.mada.action.portal.PortalProxy;
 import dk.mada.action.util.LoggerConfig;
 import java.util.List;
 import java.util.logging.Level;
