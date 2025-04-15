@@ -53,6 +53,7 @@ public class XmlExtractor {
             String fieldEnd = "</" + fieldName + ">";
             int start = xml.indexOf(fieldBegin) + fieldBegin.length();
             int end = xml.indexOf(fieldEnd);
+
             return xml.substring(start, end);
         } catch (IndexOutOfBoundsException e) {
             throw new IllegalStateException("Failed to extract field: " + fieldName + " from: " + xml, e);
