@@ -184,8 +184,8 @@ public class JsonExtractor {
             JsonType t = getType();
 
             if (key == null) {
-                if (t instanceof JsonString js) {
-                    key = js.value();
+                if (t instanceof JsonString(String value)) {
+                    key = value;
                 } else {
                     throw makeParseException("can only use strings for map keys");
                 }

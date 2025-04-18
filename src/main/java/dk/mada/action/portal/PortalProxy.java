@@ -275,8 +275,8 @@ public final class PortalProxy {
     }
 
     private String makeArtifactErrorsTxt(Map.Entry<String, JsonType> e) {
-        if (e.getValue() instanceof JsonListString ls) {
-            return e.getKey() + "\n  " + ls.values().stream().collect(Collectors.joining("\n  "));
+        if (e.getValue() instanceof JsonListString(List<String> values)) {
+            return e.getKey() + "\n  " + values.stream().collect(Collectors.joining("\n  "));
         } else {
             // This should not happen, a list of strings is expected. So just spill the data.
             return e.getKey() + "\n " + e.getValue();
