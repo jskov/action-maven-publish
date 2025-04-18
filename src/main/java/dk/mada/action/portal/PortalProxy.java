@@ -96,7 +96,8 @@ public final class PortalProxy {
 
         try {
             var data = new JsonExtractor(body);
-            DeploymentState state = DeploymentState.valueOf(data.get("deploymentState"));
+            DeploymentState state =
+                    DeploymentState.valueOf(data.getString("deploymentState").value());
             return new RepositoryStateInfo(state, "");
         } catch (Exception e) {
             return new RepositoryStateInfo(DeploymentState.FAILED, "Failed parsing response  message: " + body);
