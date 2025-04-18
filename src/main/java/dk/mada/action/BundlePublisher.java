@@ -126,7 +126,7 @@ public final class BundlePublisher {
         String summary =
                 bs.bundle().bundleJar().getFileName() + " repo:" + bs.assignedId() + ", status: " + bs.status();
         if (bs.status() == DeploymentState.FAILED) {
-            summary += " [" + bs.latestStateInfo().info() + "]";
+            summary += " [\n" + bs.latestStateInfo().info() + "]";
         }
         return summary;
     }

@@ -4,6 +4,9 @@ import dk.mada.action.ActionArguments.PortalCredentials;
 import dk.mada.action.BundleCollector.Bundle;
 import dk.mada.action.BundleRepositoryState;
 import dk.mada.action.util.JsonExtractor;
+import dk.mada.action.util.JsonExtractor.JsonListString;
+import dk.mada.action.util.JsonExtractor.JsonMap;
+import dk.mada.action.util.JsonExtractor.JsonType;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -17,7 +20,9 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * A proxy for Maven Central
@@ -49,8 +54,6 @@ public final class PortalProxy {
     private static final int DEFAULT_SHORT_CALL_TIMEOUT_SECONDS = 30;
     /** Connection timeout. */
     private static final int CONNECTION_TIMEOUT_SECONDS = 10;
-    /** Download timeout. */
-    private static final int DOWNLOAD_TIMEOUT_SECONDS = 30;
     /** The http client. */
     private final HttpClient client;
     /** The timeout to use when uploading bundles. */
@@ -83,11 +86,9 @@ public final class PortalProxy {
      * @return the repository state
      */
     public RepositoryStateInfo getDeploymentStatus(String deploymentId) {
-        HttpResponse<String> response = get(STATUS_RESOURCE_PATH + "?id=" + deploymentId);
+        HttpResponse<String> response = doPost(STATUS_RESOURCE_PATH + "?id=" + deploymentId);
         int status = response.statusCode();
         String body = response.body();
-
-        logger.fine(() -> "Status response (" + status + "): " + body);
 
         if (status != HttpURLConnection.HTTP_OK) {
             return new RepositoryStateInfo(
@@ -95,24 +96,17 @@ public final class PortalProxy {
         }
 
         try {
-            var data = new JsonExtractor(body);
+            JsonExtractor jex = new JsonExtractor(body);
             DeploymentState state =
-                    DeploymentState.valueOf(data.getString("deploymentState").value());
-            return new RepositoryStateInfo(state, "");
+                    DeploymentState.valueOf(jex.getString("deploymentState").value());
+            String errors = "";
+            if (jex.hasField("errors")) {
+                errors = makeDeploymentErrosTxt(jex.getMap("errors"));
+            }
+            return new RepositoryStateInfo(state, errors);
         } catch (Exception e) {
-            return new RepositoryStateInfo(DeploymentState.FAILED, "Failed parsing response  message: " + body);
+            return new RepositoryStateInfo(DeploymentState.FAILED, "Failed parsing response message: " + body);
         }
-    }
-
-    /**
-     * Gets response from the service.
-     *
-     * @param path    the url path to read from
-     * @param headers headers to use (paired values)
-     * @return the http response
-     */
-    private HttpResponse<String> get(String path, String... headers) {
-        return doGet(path, headers);
     }
 
     /**
@@ -210,39 +204,6 @@ public final class PortalProxy {
     }
 
     /**
-     * Gets data from a Portal path.
-     *
-     * @param path    the url path to read from
-     * @param headers headers to use (paired values)
-     * @return the http response
-     */
-    private HttpResponse<String> doGet(String path, String... headers) {
-        try {
-            URI uri = URI.create(PUBLISHER_API_BASE_URL + path);
-            HttpRequest.Builder builder = HttpRequest.newBuilder()
-                    .uri(uri)
-                    .timeout(Duration.ofSeconds(DOWNLOAD_TIMEOUT_SECONDS))
-                    .headers(USER_AGENT)
-                    .headers(authorizationHeader);
-            if (headers.length > 0) {
-                builder.headers(headers);
-            }
-            HttpRequest request = builder.GET().build();
-
-            logCall(request);
-            HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
-            logResponse(response);
-
-            return response;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while GET from " + path, e);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed while GET from " + path, e);
-        }
-    }
-
-    /**
      * Posts to resource.
      *
      * @param path the path to post to
@@ -297,6 +258,28 @@ public final class PortalProxy {
             throw new IllegalStateException("Interrupted while DELETE to " + path, e);
         } catch (IOException e) {
             throw new IllegalStateException("Failed while DELETE to " + path, e);
+        }
+    }
+
+    /**
+     * Make text message of deployment errors.
+     *
+     * @param errors the map of error values
+     * @return a formatted text message
+     */
+    private String makeDeploymentErrosTxt(JsonMap errors) {
+        return " "
+                + errors.values().entrySet().stream()
+                        .map(this::makeArtifactErrorsTxt)
+                        .collect(Collectors.joining("\n "));
+    }
+
+    private String makeArtifactErrorsTxt(Map.Entry<String, JsonType> e) {
+        if (e.getValue() instanceof JsonListString ls) {
+            return e.getKey() + "\n  " + ls.values().stream().collect(Collectors.joining("\n  "));
+        } else {
+            // This should not happen, a list of strings is expected. So just spill the data.
+            return e.getKey() + "\n " + e.getValue();
         }
     }
 
