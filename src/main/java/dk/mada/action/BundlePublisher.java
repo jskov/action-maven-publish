@@ -12,8 +12,6 @@ import java.util.stream.Collectors;
 
 /**
  * Uploads bundles and follow their state until stable. Then drops/keeps/publishes them.
- *
- * TODO: This class can do with some cleanup.
  */
 public final class BundlePublisher {
     private static Logger logger = Logger.getLogger(BundlePublisher.class.getName());
