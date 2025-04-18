@@ -30,8 +30,7 @@ Otherwise you run the theoretical risk of the tag being moved in bad faith (or w
 
 You *should* be using the Git hash from a release (see `Code Review` section below).
 
-I do not foresee many releases. Maybe expose some extra settings for configuration.
-And at least one more when SonaType takes the new Publishing API out of early access.
+I do not foresee many future releases.
 
 ### Code Review
 
@@ -42,9 +41,40 @@ Well, you should not!
 You would do well to fork this repository and review the code. And then use the Action from your forked repository!
 Basically the [official](https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-third-party-actions) recommendations but with extra paranoia :)
 
-According to [SonarCloud](https://sonarcloud.io/component_measures?metric=lines_to_cover&selected=jskov_action-maven-publish%3Asrc%2Fmain%2Fjava%2Fdk%2Fmada%2Faction&id=jskov_action-maven-publish) there are <700 lines of java code.
+According to [SonarCloud](https://sonarcloud.io/component_measures?metric=lines_to_cover&selected=jskov_action-maven-publish%3Asrc%2Fmain%2Fjava%2Fdk%2Fmada%2Faction&id=jskov_action-maven-publish) there are <600 code lines of java (~1800 textual lines).
 
-If you have written enough code to publish anything on MavenCentral, it should be a piece of cake to review.
+If you have written enough code to publish anything on MavenCentral, it should not be hard to review.
+
+Pay attention to handling of environment variables (where your secrets will be) and what gets printed to the console.  
+And verify that no other external communication/execution happens that could leak the secrets.
+
+Here is a guided tour:
+
+* Start in [action.yaml](./action.yaml) and verify that only the ['src/main/java'](./src/main/java) code is compiled and run.  
+* The java implementation is entered via the main class [ActionNexusPublisher](./src/main/java/dk/mada/action/ActionNexusPublisher.java).
+* It parses the arguments (environment variables) via [ActionArguments](./src/main/java/dk/mada/action/ActionArguments.java).  
+  Note that the types containing secrets (GpgCertificate and PortalCredentials) override toString() to avoid accidental exposure.
+* The logger is configured from [logging.properties](./src/main/resources/logging.properties).
+* The [GpgSigner](./src/main/java/dk/mada/action/GpgSigner.java) is created in a try-with-resources to ensure that it will eventually delete the created temporary directory GNUPGHOME.
+* Instances are created of [BundleCollector](./src/main/java/dk/mada/action/BundleCollector.java), [PortalProxy](./src/main/java/dk/mada/action/portal/PortalProxy.java), and [BundlePublisher](./src/main/java/dk/mada/action/BundlePublisher.java).
+* Now the GPG certificate is loaded into GNUPGHOME using the external `gpg` command (this must be provided by the OS executing your workflow).  
+    Pay attention to where the GPG certifiate key and secret are accessed (hint, the secret is only used later when signing files - where it is passed via stdin to the `gpg` process).  
+    For this, you want to visit [ExternalCmdRunner](./src/main/java/dk/mada/action/util/ExternalCmdRunner.java) and verify that it does not squirrel away (or spills by accident) your secrets.  
+* [BundleCollector](./src/main/java/dk/mada/action/BundleCollector.java) finds the files to be published.  
+    This asserts that you have provided `.sha1` and `.md5` files for each artifact.  
+    If so the artifacts are signed with via [GpgSigner](./src/main/java/dk/mada/action/GpgSigner.java).  
+    It packages artifacts, checksum files, and signature files into bundles (which are jar-files).  
+    The layout in the bundle archives needs to match the artifact GAV, so [XmlExtractor](./src/main/java/dk/mada/action/util/XmlExtractor.java) is used to extract that information from each POM file.
+* [BundlePublisher](./src/main/java/dk/mada/action/BundlePublisher.java) can now upload the bundles to Maven Central.  
+    The [PortalProxy](./src/main/java/dk/mada/action/portal/PortalProxy.java) is used for all communication with the Publich Portal API.  
+    Your PortalCredentials are used to construct the Authorization header used in these calls (check that it is not used for anything else - and not logged).
+* [BundlePublisher](./src/main/java/dk/mada/action/BundlePublisher.java) keeps polling the status resource until the repositories settle.  
+    The status is parsed from JSON using [JsonExtractor](./src/main/java/dk/mada/action/util/JsonExtractor.java).  
+    Status will be printed to the console while the loop runs.  
+*  Depending on your configured target action, the repositories are dropped, kept (for manual cleanup/publishing), or attempted published.
+* On completion the Action will return success or failure depending on the final states of the repositories.
+
+Did you find something weird or broken? Please let me know (privately if it could affect the security).
 
 
 ### Testing
@@ -104,14 +134,7 @@ If you have an example of a Maven-based repository using this Action (and would 
   from Maven/Gradle plugins that are not activated by publishing (if any?).
 
 * *How should I review the code, then?*  
-  I would start with [action.yaml](./action.yaml) and verify that only the ['src/main/java'](./src/main/java) code is included.  
-  
-  Then I would go to the Action main class ([ActionNexusPublisher](./src/main/java/dk/mada/action/ActionNexusPublisher.java)) and just follow all branch points.  
-
-  Pay attention to handling of environment variables (where your secrets will be) and what gets printed to the console.  
-  Verify that no other external communication/execution happens that could leak the secrets.
-  
-  And obviously be suspicious of my guidance :)
+  See [code review](#code-review)!
 
 * *Are you really this paranoid?*  
   When it suits me.
