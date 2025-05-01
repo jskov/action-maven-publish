@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.CleanupMode;
@@ -102,7 +103,7 @@ class BundleCollectorTest {
      */
     private List<String> filesIn(Path jar) throws IOException {
         try (JarFile jf = new JarFile(jar.toFile())) {
-            return jf.stream().map(je -> je.getName()).toList();
+            return jf.stream().map(JarEntry::getName).toList();
         }
     }
 }
