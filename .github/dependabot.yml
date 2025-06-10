@@ -10,7 +10,7 @@ updates:
     schedule:
       interval: "weekly"
       day: "tuesday"
-      time: "08:00"
+      time: "03:00"
       timezone: "Europe/Copenhagen"
     groups:
       junit:
@@ -23,3 +23,4 @@ updates:
       interval: "weekly"
       day: "tuesday"
       time: "03:00"
+      timezone: "Europe/Copenhagen"
