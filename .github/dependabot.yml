@@ -8,9 +8,18 @@ updates:
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "tuesday"
+      time: "08:00"
+      timezone: "Europe/Copenhagen"
+    groups:
+      junit:
+        patterns:
+          - "org.junit*"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-      
+      day: "tuesday"
+      time: "03:00"
