@@ -1,5 +1,5 @@
 [libraries]
-assertJ             = { module = "org.assertj:assertj-core", version = "3.27.4" }
+assertJ             = { module = "org.assertj:assertj-core", version = "3.27.6" }
 unit                = { module = "org.junit.jupiter:junit-jupiter", version = "5.13.4" }
 unitPlatform        = { module = "org.junit.platform:junit-platform-runner", version = "1.13.4" }
 
