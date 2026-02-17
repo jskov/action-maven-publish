@@ -1,7 +1,7 @@
 [libraries]
 assertJ             = { module = "org.assertj:assertj-core", version = "3.27.7" }
-unit                = { module = "org.junit.jupiter:junit-jupiter", version = "6.0.2" }
-unitPlatform        = { module = "org.junit.platform:junit-platform-runner", version = "1.14.2" }
+unit                = { module = "org.junit.jupiter:junit-jupiter", version = "6.0.3" }
+unitPlatform        = { module = "org.junit.platform:junit-platform-runner", version = "1.14.3" }
 
 [bundles]
 testUnit            = [ "assertJ", "unit", "unitPlatform" ]
