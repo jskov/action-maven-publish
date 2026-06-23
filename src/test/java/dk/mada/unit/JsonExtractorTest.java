@@ -12,8 +12,7 @@ import org.junit.jupiter.api.Test;
  * Test of the crude Json field extractor.
  */
 class JsonExtractorTest {
-    private static final String EXAMPLE_JSON =
-            """
+    private static final String EXAMPLE_JSON = """
             {
             "deploymentId": "28570f16-da32-4c14-bd2e-c1acc0782365",
             "deploymentName": "central-bundle.zip",
@@ -67,13 +66,10 @@ class JsonExtractorTest {
      */
     @Test
     void canPrintSensibleErrorHints() {
-        assertThatThrownBy(() -> new JsonExtractor(
-                                """
+        assertThatThrownBy(() -> new JsonExtractor("""
                 {
                 "field":
                      P
-                """)
-                        .getString("field"))
-                .hasMessageContaining("line:3, column:5");
+                """).getString("field")).hasMessageContaining("line:3, column:5");
     }
 }
