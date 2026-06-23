@@ -11,11 +11,11 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - name: Define BUILD_LABEL
-        env:
-          INPUT: ${{ github.head_ref || github.ref_name }}
-        run: |
-          echo "BUILD_LABEL=${INPUT//\//_}" >> $GITHUB_ENV
+ #     - name: Define BUILD_LABEL
+ #       env:
+ #         INPUT: ${{ github.head_ref || github.ref_name }}
+ #       run: |
+ #         echo "BUILD_LABEL=${INPUT//\//_}" >> $GITHUB_ENV
     
       - name: Set up Java
         uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
@@ -30,10 +30,10 @@ jobs:
         with:
           fetch-depth: 0 # Allows sonar to collect blame information
 
-      - name: Set build version
-        # Cannot use ${BUILD_LABEL} with gradle-build-action, so stuff version
-        # into gradle.properties
-        run: sed -i 's/^version.*/version = '${BUILD_LABEL}'/;' ./gradle.properties
+#      - name: Set build version
+#        # Cannot use ${BUILD_LABEL} with gradle-build-action, so stuff version
+#        # into gradle.properties
+#        run: sed -i 's/^version.*/version = '${BUILD_LABEL}'/;' ./gradle.properties
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
